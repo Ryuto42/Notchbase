@@ -1,0 +1,16 @@
+// Ad-hoc by default so a fresh clone builds with no Apple account.
+// Create Config/Local.xcconfig (ignored by git) to sign with your own certificate:
+//
+//   CODE_SIGN_IDENTITY = Apple Development: you@example.com (TEAMID)
+//   DEVELOPMENT_TEAM = TEAMID
+//
+// A stable identity matters because macOS ties Automation and Calendar grants to the
+// code signature; ad-hoc builds are re-authorised every time they change.
+
+CODE_SIGN_IDENTITY = -
+CODE_SIGN_STYLE = Manual
+DEVELOPMENT_TEAM =
+CODE_SIGN_ENTITLEMENTS = Config/Notchbase.entitlements
+ENABLE_HARDENED_RUNTIME = YES
+
+#include? "Local.xcconfig"

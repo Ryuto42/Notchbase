@@ -1,0 +1,16 @@
+{
+  "git.repositoryScanIgnoredFolders": [
+    "node_modules",
+    ".build",
+    "DerivedData",
+    "dist"
+  ],
+  "files.exclude": {
+    "**/.build": true,
+    "**/dist": true
+  },
+  "search.exclude": {
+    "**/.build": true,
+    "**/dist": true
+  }
+}

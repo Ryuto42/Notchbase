@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad
+xcuserdata/
+*.xcworkspace/xcuserdata/
+Notchbase.xcodeproj/project.xcworkspace/
+Notchbase.xcodeproj/xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.pins
+
+# Build output and release artefacts
+dist/
+
+# Local signing identity — see Config/Signing.xcconfig
+Config/Local.xcconfig
+
+# Editors
+# settings.json is shared on purpose: it keeps the dependency checkouts under
+# .build out of VS Code's Source Control view. Everything else here is personal.
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.swp
+*~
