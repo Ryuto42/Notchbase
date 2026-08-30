@@ -12,7 +12,6 @@ struct AgentSession: Identifiable, Hashable {
             }
         }
 
-        /// Command that opens a project with this tool.
         var command: String {
             switch self {
             case .claude: "claude"
@@ -20,8 +19,6 @@ struct AgentSession: Identifiable, Hashable {
             }
         }
 
-        /// Deep link that opens this tool on a project.
-        ///
         func deepLink(for directory: String) -> URL? {
             let encoded = directory.addingPercentEncoding(
                 withAllowedCharacters: .alphanumerics.union(.init(charactersIn: "-._~/"))) ?? directory

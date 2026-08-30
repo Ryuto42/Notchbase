@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// Vendor marks, bundled as SVG (NSImage decodes SVG on macOS 13+) and rendered as a
-/// template so they pick up the surrounding tint.
 enum BrandIcon {
     private static var cache: [String: NSImage] = [:]
 

@@ -1,7 +1,5 @@
 import Foundation
 
-/// Where the Spotify refresh token lives.
-///
 enum TokenStore {
     private static var url: URL { Paths.file("spotify-token") }
 

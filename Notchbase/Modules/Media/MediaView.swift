@@ -34,7 +34,6 @@ struct MediaView: View {
         .background(alignment: .bottom) { ambience }
     }
 
-    /// Warm wash pulled from the album art, fading upward into the black panel.
     private var ambience: some View {
         LinearGradient(colors: [(media.artworkTint ?? Theme.accent).opacity(0.08), .clear],
                        startPoint: .bottom, endPoint: .top)
@@ -86,6 +85,12 @@ private struct NowPlayingColumn: View {
                 } label: {
                     ArtworkView(image: media.artwork, size: 62, radius: 11)
                         .contentShape(Rectangle())
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.32, anchor: .topLeading)
+                                .combined(with: .opacity),
+                            removal: .scale(scale: 0.26, anchor: .topLeading)
+                                .combined(with: .opacity)
+                                .animation(Motion.withdraw)))
                 }
                 .buttonStyle(.plain)
                 .help("Open \(playing.source.rawValue)")
@@ -114,7 +119,7 @@ private struct NowPlayingColumn: View {
                 Spacer(minLength: 6)
 
                 if playing.isPlaying {
-                    AudioBarsView(isAnimating: true)
+                    AudioBarsView(isAnimating: true, tint: media.artworkAccent)
                         .transition(.opacity)
                 }
             }
@@ -144,7 +149,7 @@ private struct NowPlayingColumn: View {
                 .frame(width: 32, alignment: .leading)
 
             GeometryReader { proxy in
-                Meter(value: playing.progress, tint: .white, height: 5)
+                Meter(value: playing.progress, tint: media.artworkAccent ?? .white, height: 5)
                     .contentShape(Rectangle().inset(by: -8))
                     .gesture(
                         DragGesture(minimumDistance: 0).onEnded { value in
@@ -164,7 +169,8 @@ private struct NowPlayingColumn: View {
 
     private var controls: some View {
         HStack(spacing: 0) {
-            ToggleButton(symbol: "shuffle", isOn: playing.isShuffling) { media.toggleShuffle() }
+            ToggleButton(symbol: "shuffle", isOn: playing.isShuffling,
+                         tint: media.artworkAccent) { media.toggleShuffle() }
             Spacer(minLength: 0)
             HStack(spacing: 2) {
                 TransportButton(symbol: "backward.fill", size: 15) { media.previous() }
@@ -175,7 +181,8 @@ private struct NowPlayingColumn: View {
             }
             Spacer(minLength: 0)
             ToggleButton(symbol: playing.repeatMode.symbol,
-                         isOn: playing.repeatMode != .off) { media.cycleRepeat() }
+                         isOn: playing.repeatMode != .off,
+                         tint: media.artworkAccent) { media.cycleRepeat() }
             OutputDeviceButton()
         }
     }
@@ -292,10 +299,10 @@ private struct QueueRow: View {
     }
 }
 
-/// Transport toggle (shuffle / repeat) that tints when active.
 private struct ToggleButton: View {
     var symbol: String
     var isOn: Bool
+    var tint: Color?
     var action: () -> Void
 
     @State private var hovering = false
@@ -304,7 +311,7 @@ private struct ToggleButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(isOn ? Theme.accent : Theme.primaryText.opacity(hovering ? 0.9 : 0.55))
+                .foregroundStyle(isOn ? (tint ?? Theme.accent) : Theme.primaryText.opacity(hovering ? 0.9 : 0.55))
                 .frame(width: 34, height: 32)
                 .background {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -357,8 +364,6 @@ private struct TransportButton: View {
     }
 }
 
-/// System output device picker. An `NSMenu` rather than SwiftUI's `Menu`: the panel is a
-/// non-activating window, where the SwiftUI menu is unreliable about opening.
 private struct OutputDeviceButton: View {
     @State private var controller = OutputMenuController()
     @State private var hovering = false

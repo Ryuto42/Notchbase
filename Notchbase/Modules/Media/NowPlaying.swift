@@ -28,7 +28,6 @@ struct NowPlaying: Equatable {
     var isShuffling: Bool = false
     var repeatMode: RepeatMode = .off
 
-    /// Identity of the track, used for artwork and lyrics caching.
     var trackKey: String { "\(source.rawValue)|\(artist)|\(title)|\(album)" }
 
     var progress: Double {

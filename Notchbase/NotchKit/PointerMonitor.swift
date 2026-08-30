@@ -1,10 +1,5 @@
 import AppKit
 
-/// Global pointer observation. Mouse-only event monitors need no Accessibility permission.
-///
-/// Hover is driven from here rather than from `NSTrackingArea` because the panel's hit
-/// testing is clipped (see `PassthroughView`) and because AppKit does not deliver
-/// `mouseEntered:` to windows during an active drag session.
 final class PointerMonitor {
     var onMove: ((CGPoint) -> Void)?
     var onFileDragMove: ((CGPoint) -> Void)?
@@ -36,8 +31,6 @@ final class PointerMonitor {
         monitors.removeAll()
     }
 
-    /// A drag session is detected by watching the drag pasteboard's change count: it bumps
-    /// exactly once when a drag begins, and only file drags are interesting to us.
     private func handleDrag() {
         if !isFileDragging {
             let pasteboard = NSPasteboard(name: .drag)

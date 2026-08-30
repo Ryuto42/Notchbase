@@ -1,7 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// Owns the panel, the metrics and the state machine. Modules plug in through `model`.
 final class NotchController {
     var panel: NotchPanel?
     private var container: PassthroughView?
@@ -12,13 +11,10 @@ final class NotchController {
 
     private var transitionTask: Task<Void, Never>?
     private var idleTimer: Timer?
-    /// The state a scheduled transition is heading towards, so repeated polls do not keep
-    /// restarting the same delay.
     private var pendingState: NotchState?
     private var lastPointer = NSEvent.mouseLocation
     private var isFileDragging = false
     private var hoverTimer: Timer?
-    /// Reopening straight away resumes where you left off; after a pause it starts fresh.
     private var collapsedAt = Date.distantPast
 
     private var pollCount = 0
@@ -67,7 +63,6 @@ final class NotchController {
         hoverTimer = hover
         Debug.log("hover timer scheduled isValid=\(hover.isValid)")
 
-        // Re-evaluates whether the collapsed strip should show an activity.
         let idle = Timer(timeInterval: 0.5, repeats: true) { _ in
             MainActor.assumeIsolated { self.refreshIdleState() }
         }
@@ -114,11 +109,6 @@ final class NotchController {
         settings.show()
     }
 
-    /// Resumes a session in its project.
-    ///
-    /// Neither tool ships a deep link — Claude.app registers `claude://` but has no route for
-    /// opening a directory, and Codex has no app at all — so "opening the project" means
-    /// starting the tool's CLI there.
     private func openProject(_ session: AgentSession) {
         guard let directory = session.directory else { return }
         let command = "cd \(shellQuoted(directory)) && \(session.tool.command)"
@@ -126,12 +116,10 @@ final class NotchController {
         let target = Preferences.shared.sessionTarget
         switch target.isAvailable ? target : .terminalApp {
         case .toolApp:
-            // Each tool's own app: Claude Code for Claude sessions, ChatGPT for Codex.
             if let link = session.tool.deepLink(for: directory) {
                 NSWorkspace.shared.open(link)
             }
         case .cursor, .vscode:
-            // Editors take the folder directly; the agent is started from inside them.
             guard let bundleID = target.bundleID,
                   let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
             else { return }
@@ -199,7 +187,6 @@ final class NotchController {
         cancelTransition()
         Debug.log("\(model.state) -> \(state) tab=\(model.tab) key=\(panel?.isKeyWindow == true) ignoreMouse=\(panel?.ignoresMouseEvents == true)")
         if state == .expanded, model.state != .expanded, !isDebugPinned {
-            // Coming back after more than a few seconds means a new glance, not a resumption.
             if Date().timeIntervalSince(collapsedAt) > Preferences.shared.resumeSeconds {
                 let wanted = Preferences.shared.defaultTab
                 model.tab = Preferences.shared.isVisible(wanted)
@@ -247,8 +234,6 @@ final class NotchController {
         }
     }
 
-    /// What to show when the pointer is away: an activity strip, or nothing.
-    /// Work in progress the pointer leaving must not discard.
     private var isHoldingOpen: Bool {
         model.calendar.draft != nil
     }
@@ -294,15 +279,30 @@ final class NotchController {
         transitionTask?.cancel()
         transitionTask = nil
         pendingState = nil
+        model.isNudging = false
     }
 
     private func scheduleExpand() {
-        schedule(.expanded, after: .milliseconds(max(0, Preferences.shared.hoverDelayMs)))
+        guard pendingState != .expanded else { return }
+        transitionTask?.cancel()
+        pendingState = .expanded
+        transitionTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(max(0, Preferences.shared.hoverDelayMs)))
+            guard !Task.isCancelled, let self else { return }
+            self.model.isNudging = true
+            try? await Task.sleep(for: .milliseconds(Preferences.shared.nudgeMs))
+            guard !Task.isCancelled else {
+                self.model.isNudging = false
+                return
+            }
+            self.model.isNudging = false
+            self.pendingState = nil
+            self.apply(.expanded)
+        }
     }
 
     // MARK: - Geometry
 
-    /// Visible body including the flared top corners, in screen coordinates.
     private func bodyRectInScreen(for state: NotchState) -> CGRect {
         let body = Layout.interactiveSize(for: state, metrics: metrics, tab: model.tab)
         let width = body.width + 2 * Layout.topRadius(for: state)
@@ -321,8 +321,6 @@ final class NotchController {
                       height: body.height)
     }
 
-    /// True when the pointer is over the notch (or the sliver of screen edge above it).
-    ///
     private func isInHoverZone(_ point: CGPoint) -> Bool {
         let zone = hoverZone
         return point.x >= zone.minX && point.x <= zone.maxX
@@ -340,7 +338,6 @@ final class NotchController {
 
     // MARK: - Pointer handling
 
-    /// Single source of truth for hover: where the pointer is, right now.
     private func pollPointer() {
         guard !isDebugPinned else { return }
         let point = NSEvent.mouseLocation
@@ -361,8 +358,6 @@ final class NotchController {
         switch model.state {
         case .expanded:
             updateHoveredTab(point)
-            // Leaving the panel always closes it, even if it currently holds key focus —
-            // unless a half-written event would be thrown away with it.
             if bodyRectInScreen(for: .expanded).insetBy(dx: -10, dy: -10).contains(point)
                 || isInHoverZone(point) || isHoldingOpen {
                 cancelTransition()
@@ -378,15 +373,12 @@ final class NotchController {
         }
     }
 
-    /// Tab switching on hover, driven from the same poll as everything else. SwiftUI's
-    /// `.onHover` depends on AppKit tracking areas, which a non-key panel does not reliably
     private func updateHoveredTab(_ point: CGPoint) {
         guard let panel else { return }
         let origin = CGPoint(x: panel.frame.minX, y: panel.frame.maxY)
 
         let hit = model.tabFrames.first { tab, local in
             guard Preferences.shared.isVisible(tab) else { return false }
-            // SwiftUI reports a top-left origin; the screen is bottom-left.
             return CGRect(x: origin.x + local.minX,
                    y: origin.y - local.maxY,
                    width: local.width,
@@ -409,7 +401,6 @@ final class NotchController {
             tabCandidateSince = Date()
             return
         }
-        // Short dwell so crossing the rail on the way to the content does not flip tabs.
         if Date().timeIntervalSince(tabCandidateSince) >= Double(Preferences.shared.tabHoverDelayMs) / 1000 {
             Debug.log("switch tab -> \(hit.rawValue)")
             model.tab = hit
@@ -418,9 +409,6 @@ final class NotchController {
         }
     }
 
-    /// Zone a dragged file has to enter for the tray to open. Deliberately close to the
-    /// notch: a full-width strip along the top of the screen fired whenever anything was
-    /// dragged near the menu bar.
     private var dropTriggerZone: CGRect {
         let notch = metrics.notchSize
         let width = notch.width + 150
@@ -450,7 +438,6 @@ final class NotchController {
                 apply(.expanded)
             }
         } else if model.state == .expanded {
-            // Dragged away again — get out of the way instead of hanging around.
             schedule(idleState, after: .milliseconds(180))
         }
     }

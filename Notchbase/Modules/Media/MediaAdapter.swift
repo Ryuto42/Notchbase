@@ -1,22 +1,16 @@
 import AppKit
 
-/// One controllable player. Adapters never touch an app that is not already running —
-/// merely addressing it with `tell application` would launch it.
 protocol MediaAdapter: AnyObject {
     var source: NowPlaying.Source { get }
     var bundleID: String { get }
-    /// Distributed notification posted by the app when playback changes.
     var notificationName: String { get }
 
     var isRunning: Bool { get }
     func snapshot() -> NowPlaying?
-    /// Tracks queued after the current one. Empty when the app exposes no queue.
     func upNext() -> [QueueEntry]
-    /// Start the given queue entry.
     func play(_ entry: QueueEntry)
     func setShuffle(_ enabled: Bool)
     func setRepeat(_ mode: RepeatMode)
-    /// Brings the player to the front.
     func activate()
     func artwork(for playing: NowPlaying) async -> NSImage?
 
@@ -40,16 +34,11 @@ struct QueueEntry: Identifiable, Hashable {
     var title: String
     var artist: String
     var artworkURL: URL?
-    /// Spotify: the track URI. Apple Music: its index in the current playlist.
     var handle: String?
-    /// Spotify only: the album/playlist the queue belongs to, so playback keeps its context
-    /// instead of collapsing to a single track.
     var contextURI: String?
 }
 
-/// Splits a tab-separated snapshot line into a `NowPlaying`.
 enum SnapshotParser {
-    /// Spotify reports a boolean, Apple Music an off/one/all enum.
     static func repeatMode(_ raw: String) -> RepeatMode {
         switch raw {
         case "true", "all": .all

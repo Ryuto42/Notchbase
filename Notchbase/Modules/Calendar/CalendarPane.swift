@@ -58,7 +58,6 @@ private struct MonthGrid: View {
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: 7)
 
-    /// Always six weeks: a month that needs five rows would otherwise resize the panel.
     private var days: [Date?] {
         guard let interval = calendar.dateInterval(of: .month, for: store.anchor) else { return [] }
         let first = interval.start
@@ -167,7 +166,6 @@ private struct DayCell: View {
 private struct UpcomingList: View {
     var store: CalendarStore
 
-    /// L.t("Upcoming") while anchored to now, otherwise the week the tapped day opens.
     private var headline: String {
         guard let selected = store.selectedDay else { return L.t("Upcoming") }
         let end = Calendar.current.date(byAdding: .day, value: 6, to: selected) ?? selected
@@ -283,8 +281,6 @@ private struct EventRow: View {
 
 // MARK: - Editor
 
-/// Compose, edit or delete a single event. It takes over the whole pane rather than
-/// floating over it: at this size a sheet would leave nothing legible behind it.
 private struct EventEditor: View {
     @Bindable var store: CalendarStore
 

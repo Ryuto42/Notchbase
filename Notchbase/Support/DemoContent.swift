@@ -1,8 +1,6 @@
 import AppKit
 import Foundation
 
-/// Fictional content for the screenshots in the README, installed only when
-/// `NOTCHBASE_DEMO=1` is set. Nothing here runs in a normally launched build.
 enum DemoContent {
     static func install(into model: NotchViewModel) {
         model.tray.applyDemo(items)
@@ -121,7 +119,6 @@ enum DemoContent {
     }
 }
 
-/// Stand-in album art, drawn rather than shipped so no third-party image is bundled.
 enum DemoArtwork {
     static let image: NSImage = {
         let size = NSSize(width: 600, height: 600)

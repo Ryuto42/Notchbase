@@ -1,10 +1,5 @@
 import SwiftUI
 
-/// Lyrics pane.
-///
-/// The column is translated by a *fractional* line number rather than snapped to whole
-/// lines, so it glides continuously with the playhead instead of cutting on each timestamp.
-/// Dragging takes over temporarily for reading ahead, then hands back to the playhead.
 struct LyricsTickerView: View {
     var controller: LyricsController
     var position: Double
@@ -35,7 +30,6 @@ struct LyricsTickerView: View {
 
     // MARK: - Time-synced
 
-    /// Line the column is parked on. Whole lines, animated: interpolating the position
     private var anchor: Int { max(0, index ?? 0) }
 
     private var offset: CGFloat {

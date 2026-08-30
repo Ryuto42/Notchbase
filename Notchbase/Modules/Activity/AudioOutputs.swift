@@ -7,7 +7,6 @@ struct AudioOutputDevice: Identifiable, Hashable {
     let name: String
 }
 
-/// Enumerates and switches the system output device. All public CoreAudio.
 enum AudioOutputs {
     static func devices() -> [AudioOutputDevice] {
         var address = AudioObjectPropertyAddress(

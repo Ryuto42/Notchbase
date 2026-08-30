@@ -5,7 +5,6 @@ struct LyricLine: Codable, Hashable {
     var text: String
 }
 
-/// Parser for the LRC timestamp format used by LRCLIB: `[mm:ss.xx] text`.
 enum LrcParser {
     private static let pattern = try? NSRegularExpression(pattern: #"\[(\d{1,2}):(\d{2})([.:]\d{1,3})?\]"#)
 

@@ -2,12 +2,8 @@ import AppKit
 import SwiftUI
 import Observation
 
-/// Chooses the active player, keeps `current` fresh and extrapolates the playhead locally
-/// so the UI can animate at 60fps without hammering AppleScript.
 @Observable
 final class MediaCoordinator {
-    /// Why there is nothing to show, so the UI can be specific instead of saying
-    /// "nothing playing" when the real problem is a missing Automation permission.
     enum Diagnostic: Equatable {
         case ok
         case noAppRunning
@@ -17,8 +13,8 @@ final class MediaCoordinator {
 
     private(set) var current: NowPlaying?
     private(set) var artwork: NSImage?
-    /// Computed once per track, not per frame — `CIAreaAverage` is far too heavy for a body.
     private(set) var artworkTint: Color?
+    private(set) var artworkAccent: Color?
     private(set) var upNext: [QueueEntry] = []
     @ObservationIgnored let queueArtwork = QueueArtworkLoader()
     @ObservationIgnored private let webClient = SpotifyWebClient()
@@ -41,6 +37,7 @@ final class MediaCoordinator {
         diagnostic = .ok
         artwork = DemoArtwork.image
         artworkTint = ArtworkAmbience.tint(for: artwork)
+        artworkAccent = ArtworkAmbience.accent(for: artwork)
     }
 
     // MARK: - Lifecycle
@@ -79,7 +76,6 @@ final class MediaCoordinator {
 
     func playPause() {
         activeAdapter?.playPause()
-        // Reflect the intent immediately; the next snapshot confirms it.
         current?.isPlaying.toggle()
         anchor(current?.position ?? 0)
         scheduleRefresh()
@@ -100,8 +96,6 @@ final class MediaCoordinator {
         scheduleRefresh()
     }
 
-    /// Brings the player app forward.
-    ///
     func activatePlayer() {
         Debug.log("activatePlayer tapped")
         Task { [weak self] in
@@ -122,7 +116,6 @@ final class MediaCoordinator {
         scheduleRefresh()
     }
 
-    /// Apple Music cycles off → all → one; Spotify has no "one", so it toggles.
     func cycleRepeat() {
         guard let playing = current else { return }
         let next: RepeatMode
@@ -148,7 +141,6 @@ final class MediaCoordinator {
 
     private func onTick() {
         refreshCounter += 1
-        // Snapshot every 2s; extrapolate in between.
         if refreshCounter % 4 == 0 {
             refresh()
         } else if var playing = current, playing.isPlaying {
@@ -165,7 +157,6 @@ final class MediaCoordinator {
         }
     }
 
-    /// Runs a harmless script against every installed player to trigger the Automation prompt.
     func requestAuthorization() {
         for adapter in adapters where adapter.isRunning {
             _ = adapter.snapshot()
@@ -173,8 +164,6 @@ final class MediaCoordinator {
         refresh()
     }
 
-    /// `NOTCHBASE_DEMO_TRACK="artist|title|album|duration|position"` publishes a synthetic
-    /// track so the lyrics and queue rendering can be checked without driving a real player.
     private func demoTrack() -> NowPlaying? {
         guard let raw = Debug.value("DEMO_TRACK") else { return nil }
         let f = raw.components(separatedBy: "|")
@@ -216,7 +205,6 @@ final class MediaCoordinator {
         }
         diagnostic = .ok
 
-        // Prefer whatever is actually playing; if several are, keep the previous winner.
         let playing = snapshots.filter(\.isPlaying)
         let chosen: NowPlaying
         if playing.count > 1, let last = lastPlayingSource,
@@ -248,6 +236,7 @@ final class MediaCoordinator {
         current = nil
         artwork = nil
         artworkTint = nil
+        artworkAccent = nil
         artworkKey = nil
         upNext = []
         onTrackChange?(nil)
@@ -258,8 +247,6 @@ final class MediaCoordinator {
         anchorDate = Date()
     }
 
-    /// Apple Music answers synchronously over AppleScript; Spotify only through the Web API,
-    /// and only once the user has connected an account.
     private func loadQueue(for playing: NowPlaying) {
         upNext = []
         if playing.source == .spotify {
@@ -290,6 +277,9 @@ final class MediaCoordinator {
             guard let self, self.artworkKey == key else { return }
             self.artwork = image
             self.artworkTint = ArtworkAmbience.tint(for: image)
+            self.artworkAccent = Preferences.shared.artworkAccent
+                ? ArtworkAmbience.accent(for: image)
+                : nil
         }
     }
 }

@@ -1,23 +1,27 @@
 import SwiftUI
 
-/// Every animation in the app, scaled by the user's chosen motion style.
 enum Motion {
     private static var scale: Double { Preferences.shared.motionStyle.scale }
 
-    private static func spring(_ response: Double, _ damping: Double) -> Animation {
-        .spring(response: response * scale, dampingFraction: damping)
+    private static func spring(_ duration: Double, _ bounce: Double) -> Animation {
+        .spring(duration: duration * scale, bounce: bounce)
     }
 
-    /// Opening and closing the panel.
-    static var open: Animation { spring(0.40, 0.76) }
-    /// Collapsed-state changes (the activity strip).
-    static var morph: Animation { spring(0.26, 0.86) }
-    /// Content appearing inside the panel.
-    static var content: Animation { spring(0.17, 0.92) }
-    /// Hover and press feedback. Must be near-instant or buttons feel unresponsive.
+    // MARK: - The panel
+
+    static var breath: Animation { spring(0.26, 0.34) }
+    static var breathOut: Animation { spring(0.30, 0.12) }
+    static var open: Animation { spring(0.42, 0.10) }
+    static var close: Animation { spring(0.34, 0) }
+
+    // MARK: - Inside the panel
+
+    static var content: Animation { spring(0.28, 0.08) }
+    static var withdraw: Animation { .easeIn(duration: 0.18 * scale) }
+    static var settle: Animation { .easeOut(duration: 0.16 * scale).delay(0.16 * scale) }
+    static var morph: Animation { spring(0.30, 0.10) }
+    static var glass: Animation { spring(0.5, 0.3) }
     static var quick: Animation { .easeOut(duration: 0.09 * scale) }
-    /// Lyric column travelling to the next line, eased the way Apple Music does it.
-    static var lyric: Animation { spring(0.62, 0.86) }
-    /// The active lyric line growing into place.
-    static var lyricEmphasis: Animation { spring(0.45, 0.80) }
+    static var lyric: Animation { spring(0.7, 0.2) }
+    static var lyricEmphasis: Animation { spring(0.5, 0.3) }
 }

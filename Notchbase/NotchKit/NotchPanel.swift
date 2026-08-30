@@ -1,8 +1,6 @@
 import AppKit
 
-/// Borderless, non-activating panel that floats above the menu bar on every Space.
 final class NotchPanel: NSPanel {
-    /// Flipped on only while a module needs real keyboard focus (terminal).
     var keyEligible = false
 
     override var canBecomeKey: Bool { keyEligible }
@@ -23,7 +21,6 @@ final class NotchPanel: NSPanel {
         isMovable = false
         isMovableByWindowBackground = false
         ignoresMouseEvents = false
-        // Above the menu bar, but below the shielding level so screenshots/Mission Control still work.
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 3)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
     }

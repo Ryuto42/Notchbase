@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Named space the tab rail reports its hit rects in.
 enum NotchCoordinateSpace {
     nonisolated static let root = "notchRoot"
 }
@@ -12,8 +11,20 @@ struct NotchRootView: View {
     private var isOpen: Bool { model.state == .expanded }
     private var topRadius: CGFloat { Layout.topRadius(for: model.state) }
 
-    /// One spring for both directions so opening and closing feel identical.
-    private var stateAnimation: Animation { Motion.open }
+    private var floorSize: CGSize {
+        CGSize(width: model.metrics.notchSize.width + 2 * Layout.closedTopRadius,
+               height: model.metrics.notchSize.height)
+    }
+
+    private var stateAnimation: Animation {
+        model.state == .expanded ? Motion.open : Motion.close
+    }
+
+    private var breath: CGSize {
+        model.isNudging && model.state != .expanded
+            ? CGSize(width: 1.055, height: 1.16)
+            : CGSize(width: 1, height: 1)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,9 +32,7 @@ struct NotchRootView: View {
             if isOpen {
                 TabRailView(model: model)
                     .padding(.top, Layout.tabRailGap)
-                    .transition(.offset(y: -14)
-                        .combined(with: .opacity)
-                        .combined(with: .scale(scale: 0.82, anchor: .top)))
+                    .transition(.offset(y: -10).combined(with: .opacity))
             }
             Spacer(minLength: 0)
         }
@@ -33,12 +42,6 @@ struct NotchRootView: View {
         .animation(Motion.content, value: model.tab)
     }
 
-    /// No drop shadow: a soft shadow spreads non-zero alpha across the whole host window,
-    /// which both looks like a smear under the panel and makes the window eat clicks.
-    ///
-    /// The body is a vertical gradient rather than flat black, with a behind-window blur
-    /// underneath it, so the panel is opaque where it meets the notch and dissolves into
-    /// the desktop at the bottom.
     private var shape: some View {
         let outline = NotchShape(topRadius: topRadius,
                                  bottomRadius: Layout.bottomRadius(for: model.state))
@@ -73,17 +76,23 @@ struct NotchRootView: View {
             Theme.innerHighlight.opacity(isOpen ? 1 : 0)
             content
         }
-        // Sized before it is clipped: a tab whose content is taller than `Layout.contentSize`
-        // would otherwise stretch the black body past the shape the hit area is built from.
-        .frame(width: size.width + 2 * topRadius, height: size.height)
+        .frame(width: max(size.width + 2 * topRadius, floorSize.width),
+               height: max(size.height, floorSize.height))
         .clipShape(outline)
-        .overlay { outline.stroke(Theme.hairline, lineWidth: isOpen ? 0.6 : 0) }
-        // Shrunk into the notch when closed, so opening reads as the panel growing out of
-        // the cutout rather than a rectangle appearing beneath it.
-        .scaleEffect(x: model.state == .closed ? 0.74 : 1,
-                     y: model.state == .closed ? 0.5 : 1,
-                     anchor: .top)
-        .opacity(model.state == .closed ? 0 : 1)
+        .glassBezel(outline,
+                    width: isOpen ? 7 : 3,
+                    strength: isOpen ? 1 : 0,
+                    fadeTop: model.metrics.notchSize.height / max(size.height, 1),
+                    fadeBottom: fadeHeight / max(size.height, 1))
+        .background(alignment: .top) {
+            Rectangle()
+                .fill(.black)
+                .frame(width: model.metrics.notchSize.width,
+                       height: model.metrics.notchSize.height)
+        }
+        .opacity(model.state == .closed && !model.isNudging ? 0 : 1)
+        .scaleEffect(x: breath.width, y: breath.height, anchor: .top)
+        .animation(model.isNudging ? Motion.breath : Motion.breathOut, value: model.isNudging)
     }
 
     private var content: some View {
@@ -96,14 +105,11 @@ struct NotchRootView: View {
             }
         }
         .padding(.horizontal, topRadius)
-        // Everything below the notch strip slides up behind it on the way out, so the
-        // content looks like it is being drawn back into the notch rather than fading.
         .transition(.offset(y: -26).combined(with: .opacity))
         .clipped()
         .animation(stateAnimation, value: model.state)
     }
 
-    /// The strip level with the physical notch: usable only to its left and right.
     private var header: some View {
         HStack(spacing: 0) {
             headerSide(alignment: .leading)
@@ -114,17 +120,16 @@ struct NotchRootView: View {
     }
 
     private func headerSide(alignment: Alignment) -> some View {
-        Group {
-            switch model.state {
-            case .activity:
-                ActivityStripView(model: model, alignment: alignment)
-            case .expanded:
-                ExpandedHeaderView(model: model, alignment: alignment)
-            case .closed:
-                Color.clear
-            }
+        ZStack(alignment: alignment) {
+            ActivityStripView(model: model, alignment: alignment)
+                .opacity(model.state == .activity ? 1 : 0)
+                .animation(isOpen ? Motion.quick : Motion.settle, value: model.state)
+            ExpandedHeaderView(model: model, alignment: alignment)
+                .opacity(isOpen ? 1 : 0)
+                .allowsHitTesting(isOpen)
         }
         .frame(width: model.sideWidth(for: size), alignment: alignment)
+        .animation(Motion.content, value: model.state)
     }
 
     @ViewBuilder
@@ -175,10 +180,6 @@ private struct ExpandedHeaderView: View {
     }
 }
 
-/// Small circular icon button used in the header and module rows.
-///
-/// The visual circle stays small but the hit area is a full 26pt square: undersized targets
-/// were the main reason clicks appeared to do nothing.
 struct GlyphButton: View {
     var symbol: String
     var size: CGFloat = 11
@@ -201,7 +202,6 @@ struct GlyphButton: View {
     }
 }
 
-/// Text button with a hit area that extends past the glyphs.
 struct TextButton: View {
     var title: String
     var action: () -> Void

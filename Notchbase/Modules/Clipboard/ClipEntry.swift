@@ -7,9 +7,7 @@ enum ClipKind: String, Codable {
 struct ClipEntry: Identifiable, Codable, Hashable {
     let id: UUID
     var kind: ClipKind
-    /// Text payload, or the path string for `fileURL`.
     var text: String?
-    /// PNG file name inside the Clipboard directory.
     var imageName: String?
     var createdAt: Date
     var pinned: Bool

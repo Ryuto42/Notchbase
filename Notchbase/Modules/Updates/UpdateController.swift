@@ -2,8 +2,6 @@ import AppKit
 import Observation
 import Sparkle
 
-/// Sparkle-backed auto-update. Checks the appcast on a schedule, and can download and
-/// install a newer build without the user visiting GitHub.
 @Observable
 @MainActor
 final class UpdateController {
@@ -41,8 +39,6 @@ final class UpdateController {
         }
     }
 
-    /// Sparkle stores these two flags itself, so there is nothing observable to read them
-    /// back from — bumping this forces the settings pane to re-render after a toggle.
     private var touch = 0
 
     var feedURL: String {
@@ -77,8 +73,6 @@ final class UpdateController {
     }
 }
 
-/// The panel runs as an accessory app, so Sparkle's windows would open behind everything
-/// and without a Dock icon to bring them back.
 private final class UserDriverDelegate: NSObject, SPUStandardUserDriverDelegate {
     var supportsGentleScheduledUpdateReminders: Bool { true }
 

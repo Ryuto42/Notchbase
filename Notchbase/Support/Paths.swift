@@ -19,7 +19,6 @@ enum Paths {
     }
 }
 
-/// Small JSON helper used by every store.
 enum JSONStore {
     static func load<T: Decodable>(_ type: T.Type, from url: URL) -> T? {
         guard let data = try? Data(contentsOf: url) else { return nil }

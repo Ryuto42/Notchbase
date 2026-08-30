@@ -3,10 +3,6 @@ import Observation
 import AppKit
 import ServiceManagement
 
-/// Every user-facing knob, backed by `UserDefaults`.
-///
-/// Values are read all over the app — `Layout` and `Motion` consult them directly — so the
-/// panel reshapes itself as soon as something changes here.
 @Observable
 final class Preferences {
     static let shared = Preferences()
@@ -15,13 +11,10 @@ final class Preferences {
 
     // MARK: - General
 
-    /// Tab shown when the panel opens fresh.
     var defaultTab: NotchTab = .media { didSet { store(defaultTab.rawValue, Key.defaultTab) } }
-    /// Reopening within this many seconds keeps the tab you were last on. 0 disables it.
     var resumeSeconds: Double = 5 { didSet { store(resumeSeconds, Key.resumeSeconds) } }
-    /// How long the pointer must rest on the notch before the panel opens.
     var hoverDelayMs: Int = 250 { didSet { store(hoverDelayMs, Key.hoverDelay) } }
-    /// Dwell before hovering a tab switches to it.
+    var nudgeMs: Int = 120 { didSet { store(nudgeMs, Key.nudge) } }
     var tabHoverDelayMs: Int = 130 { didSet { store(tabHoverDelayMs, Key.tabHoverDelay) } }
 
     var launchAtLogin: Bool = false {
@@ -62,11 +55,9 @@ final class Preferences {
 
     var language: Language = .system { didSet { store(language.rawValue, Key.language) } }
 
-    /// Order the tabs appear in, including hidden ones so unhiding restores the position.
     var tabOrder: [NotchTab] = NotchTab.allCases { didSet { store(tabOrder.map(\.rawValue), Key.tabOrder) } }
     var hiddenTabs: Set<NotchTab> = [] { didSet { store(hiddenTabs.map(\.rawValue), Key.hiddenTabs) } }
 
-    /// Tabs actually shown, in order. Never empty — hiding everything would strand the panel.
     var visibleTabs: [NotchTab] {
         let ordered = tabOrder.isEmpty ? NotchTab.allCases : tabOrder
         guard !Debug.isDemo else { return ordered }
@@ -78,13 +69,9 @@ final class Preferences {
 
     // MARK: - Appearance
 
-    /// Dissolve the lower edge of the panel into the desktop.
     var bottomFade: Bool = true { didSet { store(bottomFade, Key.bottomFade) } }
-    /// How much of the panel the fade covers, 0...1.
     var bottomFadeAmount: Double = 0.55 { didSet { store(bottomFadeAmount, Key.bottomFadeAmount) } }
-    /// Clear glass for the tab rail instead of the more solid regular glass.
     var clearGlassRail: Bool = true { didSet { store(clearGlassRail, Key.clearGlass) } }
-    /// Opacity of the tab switcher's glass and button fills. The glyphs stay legible.
     var tabRailOpacity: Double = 0.82 { didSet { store(tabRailOpacity, Key.tabRailOpacity) } }
     var showTabLabels: Bool = true { didSet { store(showTabLabels, Key.tabLabels) } }
 
@@ -98,7 +85,6 @@ final class Preferences {
             case .calm: "Calm"
             }
         }
-        /// Multiplies every spring's response — higher is slower.
         var scale: Double {
             switch self {
             case .snappy: 0.72
@@ -126,7 +112,6 @@ final class Preferences {
     }
 
     var activityPriority: ActivityPriority = .agents { didSet { store(activityPriority.rawValue, Key.activityPriority) } }
-    /// How long a finished agent keeps the strip.
     var announceSeconds: Double = 8 { didSet { store(announceSeconds, Key.announce) } }
 
     // MARK: - Modules
@@ -170,16 +155,14 @@ final class Preferences {
         static var installed: [SessionTarget] { allCases.filter(\.isAvailable) }
     }
 
-    /// Where clicking an agent session resumes it.
     var sessionTarget: SessionTarget = .toolApp { didSet { store(sessionTarget.rawValue, Key.sessionTarget) } }
 
-    /// Days of agent transcripts to keep in the list.
+    var artworkAccent: Bool = true { didSet { store(artworkAccent, Key.artworkAccent) } }
+
     var agentHistoryDays: Int = 3 { didSet { store(agentHistoryDays, Key.agentDays) } }
 
     // MARK: - Lifecycle
 
-    /// The one place a default lives. `load()` and `resetToDefaults()` both read from it, so
-    /// adding a setting means touching this table and nothing else.
     private static let registered: [String: Any] = [
         Key.defaultTab: NotchTab.media.rawValue,
         Key.tabOrder: NotchTab.allCases.map(\.rawValue),
@@ -188,6 +171,7 @@ final class Preferences {
         Key.resumeSeconds: 5.0,
         Key.hoverDelay: 250,
         Key.tabHoverDelay: 130,
+        Key.nudge: 120,
         Key.bottomFade: true,
         Key.bottomFadeAmount: 0.55,
         Key.tabRailOpacity: 0.82,
@@ -204,6 +188,7 @@ final class Preferences {
         Key.lyricsEnabled: true,
         Key.lyricsOffset: 0.0,
         Key.queueLimit: 8,
+        Key.artworkAccent: true,
         Key.shell: ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh",
         Key.agentDays: 3,
         Key.sessionTarget: SessionTarget.toolApp.rawValue,
@@ -215,8 +200,6 @@ final class Preferences {
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 
-    /// Pulls every setting out of `UserDefaults`. Each `didSet` writes the same value straight
-    /// back, which is harmless and keeps the assignment list to one per setting.
     private func load() {
         defaultTab = NotchTab(rawValue: defaults.string(forKey: Key.defaultTab) ?? "") ?? .media
         tabOrder = (defaults.stringArray(forKey: Key.tabOrder) ?? []).compactMap(NotchTab.init(rawValue:))
@@ -225,6 +208,7 @@ final class Preferences {
         resumeSeconds = defaults.double(forKey: Key.resumeSeconds)
         hoverDelayMs = defaults.integer(forKey: Key.hoverDelay)
         tabHoverDelayMs = defaults.integer(forKey: Key.tabHoverDelay)
+        nudgeMs = defaults.integer(forKey: Key.nudge)
         bottomFade = defaults.bool(forKey: Key.bottomFade)
         bottomFadeAmount = defaults.double(forKey: Key.bottomFadeAmount)
         clearGlassRail = defaults.bool(forKey: Key.clearGlass)
@@ -241,6 +225,7 @@ final class Preferences {
         lyricsEnabled = defaults.bool(forKey: Key.lyricsEnabled)
         lyricsOffset = defaults.double(forKey: Key.lyricsOffset)
         queueLimit = defaults.integer(forKey: Key.queueLimit)
+        artworkAccent = defaults.bool(forKey: Key.artworkAccent)
         terminalShell = defaults.string(forKey: Key.shell) ?? "/bin/zsh"
         agentHistoryDays = defaults.integer(forKey: Key.agentDays)
         sessionTarget = SessionTarget(rawValue: defaults.string(forKey: Key.sessionTarget) ?? "") ?? .toolApp
@@ -260,6 +245,7 @@ final class Preferences {
         static let resumeSeconds = "resumeSeconds"
         static let hoverDelay = "hoverDelayMs"
         static let tabHoverDelay = "tabHoverDelayMs"
+        static let nudge = "nudgeMs"
         static let tabOrder = "tabOrder"
         static let hiddenTabs = "hiddenTabs"
         static let language = "language"
@@ -279,9 +265,9 @@ final class Preferences {
         static let lyricsEnabled = "lyricsEnabled"
         static let lyricsOffset = "lyricsOffset"
         static let queueLimit = "queueLimit"
+        static let artworkAccent = "artworkAccent"
         static let shell = "terminalShell"
         static let agentDays = "agentHistoryDays"
         static let sessionTarget = "sessionTarget"
-
     }
 }

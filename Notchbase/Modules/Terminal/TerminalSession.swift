@@ -2,8 +2,6 @@ import AppKit
 import Observation
 import SwiftTerm
 
-/// A single long-lived shell. The view is retained here rather than by SwiftUI so the
-/// session survives the panel closing — long-running commands must not be killed.
 @Observable
 final class TerminalSession {
     static let shared = TerminalSession()
@@ -27,7 +25,6 @@ final class TerminalSession {
         view.startProcess(executable: shell, args: ["-l"], environment: environment)
     }
 
-    /// Runs a command in the live session, e.g. `cd` into a tray item's folder.
     func send(_ text: String) {
         startIfNeeded()
         view.send(txt: text)

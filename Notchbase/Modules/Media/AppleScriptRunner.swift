@@ -1,7 +1,6 @@
 import Foundation
 import AppKit
 
-/// Thin `NSAppleScript` wrapper. Scripts are cached so they are only compiled once, and the
 final class AppleScriptRunner {
     static let shared = AppleScriptRunner()
 
@@ -9,7 +8,6 @@ final class AppleScriptRunner {
         var code: Int
         var message: String
 
-        /// The user has not granted (or has revoked) Automation access.
         var isNotPermitted: Bool { code == -1743 || code == -10004 }
     }
 

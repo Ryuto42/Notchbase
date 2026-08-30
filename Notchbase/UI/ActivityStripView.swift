@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Compact information flanking the notch while the panel is closed.
 struct ActivityStripView: View {
     var model: NotchViewModel
     var alignment: Alignment
@@ -17,7 +16,7 @@ struct ActivityStripView: View {
         .transition(.asymmetric(
             insertion: .offset(y: 10).combined(with: .opacity),
             removal: .offset(y: -10).combined(with: .opacity)))
-        .animation(Motion.content, value: model.activity)
+        .animation(Motion.morph, value: model.activity)
     }
 
     // MARK: - Agents
@@ -56,17 +55,15 @@ struct ActivityStripView: View {
                     .padding(.leading, 8)
                     .help(playing.title)
             } else {
-                AudioBarsView(isAnimating: playing.isPlaying)
+                AudioBarsView(isAnimating: playing.isPlaying, tint: model.media.artworkAccent)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.trailing, 9)
                     .help("\(playing.title) — \(playing.artist)")
             }
         }
     }
-
 }
 
-/// Thin capsule progress used in the activity strip.
 struct Meter: View {
     var value: Double
     var tint: Color = Theme.accent
@@ -84,35 +81,37 @@ struct Meter: View {
     }
 }
 
-/// Three bars that pulse while audio plays.
 struct AudioBarsView: View {
     var isAnimating: Bool
+    var tint: Color?
 
-    @State private var phase = false
+    private struct Bar {
+        var base: CGFloat
+        var span: CGFloat
+        var rate: Double
+        var offset: Double
+    }
 
-    private let heights: [CGFloat] = [9, 4.5, 7]
+    private let bars = [
+        Bar(base: 4.0, span: 5.0, rate: 4.1, offset: 0),
+        Bar(base: 2.8, span: 6.4, rate: 5.6, offset: 1.9),
+        Bar(base: 3.6, span: 5.4, rate: 4.8, offset: 3.5),
+    ]
 
     var body: some View {
-        HStack(alignment: .center, spacing: 1.8) {
-            ForEach(0..<3, id: \.self) { index in
-                Capsule()
-                    .fill(Theme.accent)
-                    .frame(width: 2, height: phase ? heights[index] : heights[(index + 1) % 3])
+        TimelineView(.animation(paused: !isAnimating)) { context in
+            let time = context.date.timeIntervalSinceReferenceDate
+            HStack(alignment: .center, spacing: 1.8) {
+                ForEach(Array(bars.enumerated()), id: \.offset) { _, bar in
+                    let wave = (sin(time * bar.rate + bar.offset) + 1) / 2
+                    Capsule()
+                        .fill(tint ?? Theme.accent)
+                        .frame(width: 2, height: isAnimating ? bar.base + bar.span * wave * wave : 2.5)
+                }
             }
         }
         .frame(height: 10)
-        .onAppear { animate() }
-        .onChange(of: isAnimating) { _, _ in animate() }
-    }
-
-    private func animate() {
-        guard isAnimating else {
-            withAnimation(.easeOut(duration: 0.2)) { phase = false }
-            return
-        }
-        withAnimation(.easeInOut(duration: 0.42).repeatForever(autoreverses: true)) {
-            phase = true
-        }
+        .animation(.easeOut(duration: 0.22), value: isAnimating)
     }
 }
 
@@ -144,7 +143,6 @@ struct ArtworkView: View {
     }
 }
 
-/// Empty / error state shared by every module.
 struct PlaceholderView: View {
     var symbol: String
     var title: String

@@ -2,9 +2,6 @@ import AppKit
 import ApplicationServices
 import Observation
 
-/// Clipboard history. There is no change notification for `NSPasteboard`, so the general
-/// pasteboard's `changeCount` is polled; items flagged as concealed (password managers)
-/// or transient are ignored.
 @Observable
 final class ClipboardStore {
     private(set) var entries: [ClipEntry] = []
@@ -17,7 +14,6 @@ final class ClipboardStore {
     private let pasteboard = NSPasteboard.general
     private var lastChangeCount: Int
     private var timer: Timer?
-    /// Set while we write to the pasteboard ourselves so the write is not re-recorded.
     private var selfWriteCount = -1
 
     var filtered: [ClipEntry] {
@@ -59,7 +55,6 @@ final class ClipboardStore {
         capture()
     }
 
-    /// Conventions honoured by password managers and clipboard tools.
     private var isConcealed: Bool {
         let types = pasteboard.types?.map(\.rawValue) ?? []
         let markers = ["org.nspasteboard.ConcealedType",
@@ -96,7 +91,6 @@ final class ClipboardStore {
     // MARK: - Mutation
 
     private func append(_ entry: ClipEntry) {
-        // Collapse an immediate repeat of the same text.
         if let first = entries.first, first.kind == entry.kind, first.text == entry.text,
            entry.kind != .image {
             return
@@ -124,15 +118,10 @@ final class ClipboardStore {
         lastChangeCount = selfWriteCount
     }
 
-    /// Puts the entry on the pasteboard and sends ⌘V to whatever is frontmost.
-    ///
-    /// Notchbase never becomes the active app, so the target application is still focused —
-    /// synthesising the keystroke is enough. Posting events needs Accessibility permission.
     func paste(_ entry: ClipEntry) -> Bool {
         copy(entry)
         guard Self.canPostEvents(prompt: true) else { return false }
         Task {
-            // Let the pasteboard settle before the keystroke arrives.
             try? await Task.sleep(for: .milliseconds(120))
             Self.sendCommandV()
         }

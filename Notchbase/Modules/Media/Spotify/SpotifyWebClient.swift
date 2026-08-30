@@ -1,7 +1,5 @@
 import Foundation
 
-/// The only thing the Web API is used for: the play queue, which the desktop app's
-/// AppleScript dictionary does not expose at all.
 struct SpotifyWebClient {
     private struct QueueResponse: Decodable {
         struct Artist: Decodable { var name: String }
@@ -21,7 +19,6 @@ struct SpotifyWebClient {
         var context: Context?
     }
 
-    /// The album or playlist playback is currently running through.
     func playbackContext() async -> String? {
         guard let token = await SpotifyAuth.shared.validAccessToken() else { return nil }
         var request = URLRequest(url: URL(string: "https://api.spotify.com/v1/me/player")!)
@@ -59,7 +56,6 @@ struct SpotifyWebClient {
 
         let context = await playbackContext()
         return (decoded.queue ?? []).prefix(limit).enumerated().map { offset, item in
-            // Smallest image that is still sharp at the row size.
             let art = item.album?.images?
                 .filter { ($0.width ?? 0) >= 64 }
                 .min { ($0.width ?? 0) < ($1.width ?? 0) }

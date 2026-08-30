@@ -1,13 +1,7 @@
 import SwiftUI
 
-/// Liquid Glass surface for the floating tab rail.
-///
-/// macOS 26 ships the real thing, which samples and refracts what is behind the window and
-/// reacts to the pointer. Older systems fall back to a hand-built approximation: a
-/// behind-window blur with the saturation pushed up, a thin specular rim and a top highlight.
 struct GlassBackground<S: InsettableShape>: ViewModifier {
     var shape: S
-    /// `.clear` glass lets far more of the desktop through than `.regular`.
     var isClear = false
 
     func body(content: Content) -> some View {
@@ -45,7 +39,6 @@ extension View {
     }
 }
 
-/// A pane of glass with nothing behind it, for masking over part of a surface.
 struct GlassPane: View {
     var body: some View {
         if #available(macOS 26.0, *) {

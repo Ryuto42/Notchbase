@@ -2,7 +2,6 @@ import Foundation
 import Observation
 import IOKit.ps
 
-/// Battery state via `IOPowerSources` — the only public API for this, and cheap to poll.
 @Observable
 final class BatteryMonitor {
     private(set) var percentage: Int?

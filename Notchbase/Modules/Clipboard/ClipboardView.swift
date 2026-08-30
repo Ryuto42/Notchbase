@@ -108,8 +108,6 @@ private struct ClipRow: View {
             }
             .opacity(hovering ? 0 : 1)
             .overlay(alignment: .trailing) {
-                // Always mounted: a control that appears on hover can vanish under the
-                // pointer mid-click and swallow the press.
                 HStack(spacing: 0) {
                     GlyphButton(symbol: entry.pinned ? "pin.fill" : "pin", size: 10) {
                         store.togglePin(entry)

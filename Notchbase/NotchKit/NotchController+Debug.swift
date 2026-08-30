@@ -1,10 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Hooks that only ever run when a `NOTCHBASE_*` variable is set — see `Debug`.
 extension NotchController {
-    /// `NOTCHBASE_FORCE_TAB=media NOTCHBASE_FORCE_STATE=expanded` pins the panel open so the
-    /// layout can be inspected (and screenshotted) without chasing it with the pointer.
     var forcedState: NotchState? {
         switch Debug.value("FORCE_STATE") {
         case "expanded": .expanded
@@ -15,9 +12,6 @@ extension NotchController {
 
     var isDebugPinned: Bool { forcedState != nil }
 
-    /// `NOTCHBASE_SNAPSHOT=/tmp/shot.png` renders the expanded panel offscreen and quits.
-    /// Screen recording permission is not always available, and this is a faster loop for
-    /// checking layout than asking someone to take a screenshot.
     func captureSnapshot(to path: String) {
         Debug.log("snapshot: activity=\(String(describing: model.activity)) completion=\(String(describing: model.agents.recentCompletion()?.title)) priority=\(Preferences.shared.activityPriority.rawValue) upNext=\(model.media.upNext.count) tab=\(model.tab) current=\(model.media.current?.title ?? "-")")
         model.state = forcedState ?? .expanded
@@ -65,7 +59,6 @@ extension NotchController {
         }
         if let path = Debug.value("SNAPSHOT") {
             Task { [weak self] in
-                // Give artwork and lyrics a moment to land before rendering.
                 try? await Task.sleep(for: .seconds(7))
                 self?.captureSnapshot(to: path)
             }

@@ -2,7 +2,6 @@ import Foundation
 import Observation
 import CryptoKit
 
-/// Fetches and caches lyrics per track, and maps the playhead onto the current line.
 @Observable
 final class LyricsController {
     enum Status: Equatable {
@@ -63,8 +62,6 @@ final class LyricsController {
         }
     }
 
-    /// Where the playhead sits between lines, as a fractional line number. Scrolling by this
-    /// instead of by whole lines is what makes the column glide rather than jump.
     func progress(at position: Double) -> Double {
         guard !lines.isEmpty else { return 0 }
         guard let index = index(at: position) else { return 0 }
@@ -73,12 +70,10 @@ final class LyricsController {
         let end = index + 1 < lines.count ? lines[index + 1].time : start + 4
         let span = max(0.3, end - start)
         let through = min(1, max(0, (time - start) / span))
-        // Hold the line for most of its duration, then travel to the next one.
         let travel = through < 0.7 ? 0 : (through - 0.7) / 0.3
         return Double(index) + travel
     }
 
-    /// Index of the line that should be highlighted, honouring the user's offset.
     func index(at position: Double) -> Int? {
         guard !lines.isEmpty else { return nil }
         let time = position + Preferences.shared.lyricsOffset

@@ -26,9 +26,7 @@ final class CalendarStore {
         entries = demo
         accessGranted = true
     }
-    /// Month the grid is showing.
     var anchor = Date()
-    /// Day the list is anchored to. `nil` means "from right now".
     var selectedDay: Date?
 
     @ObservationIgnored private let store = EKEventStore()
@@ -84,7 +82,6 @@ final class CalendarStore {
         }
     }
 
-
     private func refreshAuthorization() {
         guard !Debug.isDemo else { return }
         let status = EKEventStore.authorizationStatus(for: .event)
@@ -95,7 +92,6 @@ final class CalendarStore {
                 reload()
             }
         case .notDetermined:
-            // Ask once per launch; repeating it every tick would spam the prompt.
             guard !hasRequested else { return }
             hasRequested = true
             requestAccess()
@@ -109,8 +105,6 @@ final class CalendarStore {
         refreshTimer = nil
     }
 
-    /// Covers both what the grid draws (the shown month) and what the list needs (a week
-    /// ahead), so the two never disagree about which days have events.
     func reload() {
         guard accessGranted else { return }
         let calendar = Calendar.current
@@ -137,9 +131,7 @@ final class CalendarStore {
 
     // MARK: - Editing
 
-    /// An event being composed or edited. Non-nil puts the pane into editor mode.
     struct Draft {
-        /// `nil` for an event that does not exist yet.
         var eventID: String?
         var title = ""
         var start = Date()
@@ -148,7 +140,6 @@ final class CalendarStore {
         var calendarID: String?
         var location = ""
         var notes = ""
-        /// Set when the event lives in a calendar the user cannot write to, or repeats.
         var isReadOnly = false
         var isRecurring = false
 
@@ -171,7 +162,6 @@ final class CalendarStore {
             .sorted { $0.title < $1.title }
     }
 
-    /// Starts a new event on the day the grid has selected, at the next round hour.
     func compose() {
         let calendar = Calendar.current
         let day = selectedDay ?? Date()
@@ -210,8 +200,6 @@ final class CalendarStore {
         saveError = nil
     }
 
-    /// Writes the draft back to EventKit. A repeating event is changed for this occurrence
-    /// only, which is the conservative reading of an edit made from a one-line list.
     func commit() {
         guard var draft, !draft.isReadOnly else { return }
         let trimmed = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -268,7 +256,6 @@ final class CalendarStore {
         }
     }
 
-    /// Seven days from the selected day, or from now when nothing is selected.
     var upcoming: [Entry] {
         let calendar = Calendar.current
         let start = selectedDay.map { calendar.startOfDay(for: $0) } ?? Date()
@@ -280,7 +267,6 @@ final class CalendarStore {
         selectedDay.map { Calendar.current.startOfDay(for: $0) } ?? Date()
     }
 
-    /// Selecting the same day again returns the list to "from now".
     func select(_ day: Date) {
         let calendar = Calendar.current
         if let current = selectedDay, calendar.isDate(current, inSameDayAs: day) {

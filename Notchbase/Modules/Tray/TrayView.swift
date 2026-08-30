@@ -79,7 +79,6 @@ struct TrayView: View {
     }
 }
 
-/// Drop files here (from the tray or from anywhere) to hand them to the system AirDrop sheet.
 private struct AirDropZone: View {
     var model: NotchViewModel
 
@@ -120,7 +119,6 @@ private struct AirDropZone: View {
                               lineWidth: targeted ? 1.4 : 0.5)
         }
         .scaleEffect(targeted ? 1.03 : 1)
-        // Dropping straight onto this zone bypasses the tray and shares immediately.
         .dropDestination(for: URL.self) { urls, _ in
             AirDrop.send(urls)
             return true

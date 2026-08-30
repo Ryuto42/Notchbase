@@ -1,12 +1,6 @@
 import Foundation
 
-/// Minimal in-app localisation.
-///
-/// The app ships one small string table rather than `.strings` catalogs, so the language can
-/// change without relaunching and without a build step. Anything not listed falls through to
-/// the English text that was passed in.
 enum L {
-    /// Localised string with a count substituted for `%@`.
     static func count(_ english: String, _ value: Int) -> String {
         t(english).replacingOccurrences(of: "%@", with: "\(value)")
     }
@@ -32,6 +26,10 @@ enum L {
 
     private static let japanese: [String: String] = [
         "Tray": "トレイ",
+        "Colour from the album art": "ジャケットから色を取る",
+        "The playing bars and the scrubber take their colour from the current cover. Artwork with no colour in it falls back to the standard blue.": "再生バーとシークバーの色を、再生中のジャケットから取ります。色味のないアートワークでは標準の青に戻ります。",
+        "Anticipation": "予備動作",
+        "The notch swells briefly before the panel comes out of it. Set to 0 to open straight away.": "パネルが出てくる前にノッチが少しだけ膨らみます。0 にすると即座に開きます。",
         "Notes": "メモ",
         "New event": "予定を追加",
         "Edit event": "予定を編集",

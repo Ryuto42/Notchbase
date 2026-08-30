@@ -22,7 +22,6 @@ final class SpotifyAdapter: MediaAdapter {
         end tell
         """
         guard let raw = runner.string(script) else { return nil }
-        // Spotify reports the track length in milliseconds.
         return SnapshotParser.parse(raw, source: .spotify, durationDivisor: 1000)
     }
 

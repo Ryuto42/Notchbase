@@ -62,6 +62,12 @@ private struct GeneralSettings: View {
                           range: 0...600, step: 25, format: "%.0f ms")
                 Hint(L.t("How long the pointer rests on the notch before the panel opens. A short delay stops it firing when you reach for the menu bar."))
 
+                SliderRow(title: L.t("Anticipation"),
+                          value: Binding(get: { Double(prefs.nudgeMs) },
+                                         set: { prefs.nudgeMs = Int($0) }),
+                          range: 0...300, step: 10, format: "%.0f ms")
+                Hint(L.t("The notch swells briefly before the panel comes out of it. Set to 0 to open straight away."))
+
                 SliderRow(title: L.t("Tab hover delay"),
                           value: Binding(get: { Double(prefs.tabHoverDelayMs) },
                                          set: { prefs.tabHoverDelayMs = Int($0) }),
@@ -133,7 +139,6 @@ private struct AppearanceSettings: View {
     }
 }
 
-/// Reorderable list of tabs with a visibility tick each.
 private struct TabOrderList: View {
     @Bindable var prefs: Preferences
 
@@ -202,6 +207,8 @@ private struct ModuleSettings: View {
                     .disabled(!prefs.lyricsEnabled)
                 Stepper(L.count("Show %@ upcoming tracks", prefs.queueLimit),
                         value: $prefs.queueLimit, in: 3...12)
+                Toggle(L.t("Colour from the album art"), isOn: $prefs.artworkAccent)
+                Hint(L.t("The playing bars and the scrubber take their colour from the current cover. Artwork with no colour in it falls back to the standard blue."))
                 SpotifySettings()
             }
 
@@ -225,11 +232,6 @@ private struct ModuleSettings: View {
     }
 }
 
-/// Spotify's AppleScript dictionary has no queue, so L.t("Playing Next") needs the Web API.
-///
-/// Every user registers their own free Spotify app. Sharing one Client ID is not an option:
-/// a Spotify app stays in development mode until Spotify grants extended quota, and in that
-/// mode only accounts the owner has added by hand can authorize it.
 private struct SpotifySettings: View {
     @State private var auth = SpotifyAuth.shared
     @State private var copied = false

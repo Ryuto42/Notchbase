@@ -1,15 +1,9 @@
 import Foundation
 
-/// Incremental reader for an agent transcript.
-///
-/// Session logs are append-only JSONL that can reach several megabytes, so each file is read
-/// once and then only from wherever the last read stopped.
 final class TranscriptReader {
     private(set) var tokens = 0
     private(set) var title: String?
-    /// True while the agent still owes a reply.
     private(set) var turnOpen = false
-    /// Directory the session is working in, so a row can open the project.
     private(set) var directory: String?
     private var offset: UInt64 = 0
     private var lastSize: UInt64 = 0
@@ -22,14 +16,12 @@ final class TranscriptReader {
         self.tool = tool
     }
 
-    /// Consumes whatever has been appended since the previous call.
     func refresh() {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return }
         defer { try? handle.close() }
 
         let size = (try? handle.seekToEnd()) ?? 0
         if size < lastSize {
-            // The file was truncated or replaced; start over.
             offset = 0
             tokens = 0
         }
@@ -39,7 +31,6 @@ final class TranscriptReader {
         try? handle.seek(toOffset: offset)
         guard let data = try? handle.readToEnd(), !data.isEmpty else { return }
 
-        // Only consume up to the last complete line; the rest arrives next time.
         guard let lastNewline = data.lastIndex(of: UInt8(ascii: "\n")) else { return }
         let consumable = data[data.startIndex...lastNewline]
         offset += UInt64(consumable.count)
@@ -61,11 +52,9 @@ final class TranscriptReader {
         }
         switch object["type"] as? String {
         case "user":
-            // Either a prompt or a tool result — the model has to answer either way.
             turnOpen = true
         case "assistant":
             let content = (object["message"] as? [String: Any])?["content"] as? [[String: Any]] ?? []
-            // A turn that ends in a tool call is still going; anything else finishes it.
             turnOpen = content.contains { $0["type"] as? String == "tool_use" }
         default:
             break
@@ -95,7 +84,6 @@ final class TranscriptReader {
               let info = payload["info"] as? [String: Any],
               let total = info["total_token_usage"] as? [String: Any],
               let value = total["total_tokens"] as? Int else { return }
-        // Codex reports a running total for the session rather than a per-message delta.
         tokens = value
     }
 }

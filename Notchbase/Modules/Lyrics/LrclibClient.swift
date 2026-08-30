@@ -1,6 +1,5 @@
 import Foundation
 
-/// LRCLIB (https://lrclib.net) — keyless, community-maintained synced lyrics.
 struct LrclibClient {
     struct Response: Decodable {
         var id: Int?
@@ -47,8 +46,6 @@ struct LrclibClient {
         guard let results = await fetch(components.url, as: [Response].self), !results.isEmpty else {
             return nil
         }
-        // Prefer time-synced uploads, then whichever length is closest to what is playing —
-        // the index is full of near-duplicates with slightly different runtimes.
         let synced = results.filter(\.hasSynced)
         let pool = synced.isEmpty ? results : synced
         guard playing.duration > 0 else { return pool.first }

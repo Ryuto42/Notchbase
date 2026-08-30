@@ -1,7 +1,4 @@
 #!/bin/bash
-# Generates every AppIcon slot from a single 1024x1024 PNG.
-#
-#   Scripts/make-icon.sh path/to/icon-1024.png
 set -euo pipefail
 
 src="${1:?usage: make-icon.sh <1024x1024 png>}"

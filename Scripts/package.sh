@@ -1,17 +1,5 @@
 #!/bin/bash
-# Builds a Release .app and zips it for a GitHub release.
-#
-#   Scripts/package.sh                 # ad-hoc signed, fine for personal use
-#   SIGN_IDENTITY="Developer ID Application: You (TEAMID)" Scripts/package.sh
-#
-# Notarising (optional, removes the Gatekeeper warning for other people):
-#   xcrun notarytool submit dist/Notchbase-<version>.zip \
-#       --keychain-profile notchbase --wait
-#   xcrun stapler staple dist/Notchbase.app
-#
-# The zip is signed with the Sparkle EdDSA key held in the login keychain and
-# appcast.xml at the repo root is regenerated. Commit it and attach the zip to a
-# GitHub release tagged v<version>. Set SKIP_APPCAST=1 to build only.
+# Scripts/package.sh [SKIP_APPCAST=1]  — build, sign, zip, refresh appcast.xml
 set -euo pipefail
 
 SPARKLE_VERSION=2.9.6
@@ -41,14 +29,10 @@ app="$build/Build/Products/Release/Notchbase.app"
 
 version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")
 cp -R "$app" "$dist/"
-# ditto keeps the bundle's symlinks and extended attributes intact.
 ditto -c -k --keepParent "$dist/Notchbase.app" "$dist/Notchbase-$version.zip"
 
 codesign -dv "$dist/Notchbase.app" 2>&1 | grep -E "Signature|TeamIdentifier" || true
 
-# --- Sparkle appcast -------------------------------------------------------
-# Signs the zip with the EdDSA key in the login keychain and refreshes appcast.xml,
-# which is what the app polls for updates. Skipped with SKIP_APPCAST=1.
 tools="$root/.build/sparkle-tools"
 if [ -z "${SKIP_APPCAST:-}" ]; then
     if [ ! -x "$tools/bin/generate_appcast" ]; then

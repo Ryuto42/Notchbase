@@ -1,10 +1,15 @@
 import SwiftUI
 
-/// The notch silhouette: concave flares at the top corners, convex rounding at the bottom.
-/// The body is inset by `topRadius` on each side, so the flares live inside `rect`.
-struct NotchShape: Shape {
+struct NotchShape: Shape, InsettableShape {
     var topRadius: CGFloat
     var bottomRadius: CGFloat
+    var inset: CGFloat = 0
+
+    func inset(by amount: CGFloat) -> NotchShape {
+        var copy = self
+        copy.inset += amount
+        return copy
+    }
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
         get { AnimatablePair(topRadius, bottomRadius) }
@@ -15,6 +20,7 @@ struct NotchShape: Shape {
     }
 
     func path(in rect: CGRect) -> Path {
+        let rect = rect.insetBy(dx: inset, dy: inset)
         let top = min(topRadius, rect.height * 0.34, rect.width / 2)
         let bottom = min(bottomRadius, rect.height * 0.40, max(0, rect.width / 2 - top))
 

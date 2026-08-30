@@ -1,8 +1,6 @@
 import AppKit
 import Observation
 
-/// The file tray. Dropped files are either copied into the app's storage (default) or
-/// referenced in place through a security-scoped bookmark.
 @Observable
 final class TrayStore {
     private(set) var items: [TrayItem] = []
@@ -47,7 +45,6 @@ final class TrayStore {
 
     // MARK: - Access
 
-    /// Resolved location of an item, or nil if the original moved away.
     func url(for item: TrayItem) -> URL? {
         if item.isCopy, let stored = item.storedName {
             let url = filesDir.appendingPathComponent(stored)
@@ -100,7 +97,6 @@ final class TrayStore {
                         isDirectory: isDirectory, byteSize: size)
     }
 
-    /// Drop entries whose backing file disappeared while the app was not running.
     private func prune() {
         let before = items.count
         items.removeAll { url(for: $0) == nil }

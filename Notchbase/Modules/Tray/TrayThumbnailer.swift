@@ -2,7 +2,6 @@ import AppKit
 import QuickLookThumbnailing
 import UniformTypeIdentifiers
 
-/// Quick Look thumbnails with a Finder-icon fallback, cached by item id.
 @Observable
 final class TrayThumbnailer {
     private var cache: [UUID: NSImage] = [:]
@@ -20,15 +19,12 @@ final class TrayThumbnailer {
             icons[item.id] = icon
             return icon
         }
-        // Fetching the Finder icon on every body evaluation is expensive; keep it.
         let icon = NSWorkspace.shared.icon(forFile: url.path)
         icons[item.id] = icon
         request(item.id, url: url)
         return icon
     }
 
-    /// Used when the original file is gone — a reference-mode item whose source moved, or
-    /// an item that has no file behind it at all.
     private static func typeIcon(for item: TrayItem) -> NSImage {
         if item.isDirectory { return NSWorkspace.shared.icon(for: .folder) }
         let ext = URL(fileURLWithPath: item.name).pathExtension

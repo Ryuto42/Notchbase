@@ -1,10 +1,6 @@
 import Foundation
 import Observation
 
-/// Watches the on-disk transcripts that Claude Code and Codex leave behind.
-///
-/// There is no API for either tool, but both append JSONL as they work: the file's
-/// modification time says whether an agent is mid-turn, and the lines carry token counts.
 @Observable
 final class AgentMonitor {
     struct Completion: Equatable {
@@ -16,7 +12,6 @@ final class AgentMonitor {
     private(set) var sessions: [AgentSession] = []
 
     func applyDemo(_ demo: [AgentSession]) { sessions = demo }
-    /// The most recent session that stopped working, so the notch can announce it.
     private(set) var lastCompletion: Completion?
 
     @ObservationIgnored private var wasWorking: Set<String> = []
@@ -34,7 +29,6 @@ final class AgentMonitor {
 
     var workingSessions: [AgentSession] { sessions.filter { $0.status == .working } }
 
-    /// A completion is worth announcing for a few seconds after it happens.
     func recentCompletion(within seconds: TimeInterval = 25) -> Completion? {
         guard let completion = lastCompletion,
               Date().timeIntervalSince(completion.at) < seconds else { return nil }
@@ -85,12 +79,10 @@ final class AgentMonitor {
 
         sessions = found.sorted { $0.lastActivity > $1.lastActivity }
         noteCompletions(in: sessions)
-        // Drop readers for files that aged out so the cache cannot grow without bound.
         let live = Set(found.map(\.id))
         readers = readers.filter { live.contains($0.key.path) }
     }
 
-    /// Fires when a session that was mid-turn stops being mid-turn.
     private func noteCompletions(in sessions: [AgentSession]) {
         let working = Set(sessions.filter { $0.status == .working }.map(\.id))
         let finished = wasWorking.subtracting(working)
@@ -130,11 +122,9 @@ final class AgentMonitor {
         if let title = reader.title, !title.isEmpty { return title }
         switch tool {
         case .claude:
-            // The directory encodes the working directory: "-Users-me-Code-Thing".
             let folder = url.deletingLastPathComponent().lastPathComponent
             return folder.split(separator: "-").last.map(String.init) ?? "Claude session"
         case .codex:
-            // rollout-<timestamp>-<uuid>.jsonl
             let name = url.deletingPathExtension().lastPathComponent
             let id = name.split(separator: "-").suffix(5).joined(separator: "-")
             return codexTitles[id] ?? "Codex session"

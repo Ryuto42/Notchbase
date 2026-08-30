@@ -4,8 +4,6 @@ import Observation
 import CryptoKit
 import Network
 
-/// Spotify authorization via PKCE. No client secret is involved, so nothing sensitive ships
-/// in the binary; the refresh token lives in the login keychain.
 @Observable
 final class SpotifyAuth {
     static let shared = SpotifyAuth()
@@ -34,15 +32,12 @@ final class SpotifyAuth {
         }
     }
 
-    /// Spotify client IDs are 32 lowercase hex characters. Catching a pasted secret or
-    /// dashboard URL here is far clearer than a rejected authorize request.
     var isClientIDPlausible: Bool {
         clientID.count == 32 && clientID.allSatisfy(\.isHexDigit)
     }
 
     static let dashboardURL = URL(string: "https://developer.spotify.com/dashboard/create")!
 
-    /// Accepts a bare ID, a dashboard URL, or either with stray whitespace around it.
     private static func normalize(_ raw: String) -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.contains("/") else { return trimmed }
@@ -112,7 +107,6 @@ final class SpotifyAuth {
         NSWorkspace.shared.open(url)
     }
 
-    /// Abandons a half-finished browser round trip without touching a stored token.
     func cancel() {
         listener?.stop()
         listener = nil
@@ -128,7 +122,6 @@ final class SpotifyAuth {
 
     // MARK: - Tokens
 
-    /// A valid bearer token, refreshing it when needed.
     func validAccessToken() async -> String? {
         if let accessToken, Date() < accessTokenExpiry { return accessToken }
         guard let refresh = TokenStore.read() else { return nil }

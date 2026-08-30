@@ -1,8 +1,6 @@
 import Foundation
 import Network
 
-/// Minimal one-shot HTTP listener that catches Spotify's OAuth redirect on the loopback
-/// address. It only ever reads one request line and then shuts down.
 final class CallbackListener {
     enum Result {
         case success(String)
@@ -26,8 +24,6 @@ final class CallbackListener {
               let listener = try? NWListener(using: .tcp, on: nwPort) else { return false }
         self.listener = listener
 
-        // The listener is MainActor-isolated (and therefore Sendable), so a strong capture is
-        // fine here; `finish` tears it down and SpotifyAuth drops its reference.
         listener.newConnectionHandler = { connection in
             connection.start(queue: .main)
             connection.receive(minimumIncompleteLength: 1, maximumLength: 8192) { data, _, _, _ in
@@ -49,7 +45,6 @@ final class CallbackListener {
         }
         listener.start(queue: .main)
 
-        // Do not wait forever if the browser flow is abandoned.
         Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(180))
             self?.finish(.failure("Authorization timed out"))
