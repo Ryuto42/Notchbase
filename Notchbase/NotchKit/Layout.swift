@@ -11,7 +11,11 @@ enum Layout {
     static let closedBottomRadius: CGFloat = 10
 
     static func topRadius(for state: NotchState) -> CGFloat {
-        state == .expanded ? topCornerRadius : closedTopRadius
+        switch state {
+        case .expanded: topCornerRadius
+        case .activity: closedTopRadius
+        case .closed: 0
+        }
     }
 
     static func bottomRadius(for state: NotchState) -> CGFloat {

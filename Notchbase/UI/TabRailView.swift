@@ -11,6 +11,7 @@ struct TabRailView: View {
     var body: some View {
         content
             .background { bar }
+            .geometryGroup()
             .animation(Motion.glass, value: model.tab)
     }
 
@@ -41,15 +42,19 @@ struct TabRailView: View {
     }
 
     private var bar: some View {
-        ZStack {
-            BackdropView().saturation(1.5)
-            Color.black.opacity(0.42)
-            LinearGradient(colors: [Color.white.opacity(0.08), .clear],
-                           startPoint: .top, endPoint: .center)
-        }
-        .clipShape(Capsule())
-        .cardRim(Capsule(), strength: 0.9)
-        .opacity(fade)
+        Capsule()
+            .fill(.ultraThinMaterial)
+            .overlay {
+                Capsule()
+                    .fill(Color.black.opacity(0.26))
+                    .overlay {
+                        Capsule().fill(LinearGradient(
+                            colors: [Color.white.opacity(0.08), .clear],
+                            startPoint: .top, endPoint: .center))
+                    }
+            }
+            .cardRim(Capsule(), strength: 0.9)
+            .opacity(fade)
     }
 }
 
@@ -73,6 +78,7 @@ private struct TabButton: View {
                     Text(tab.title)
                         .font(Typo.rounded(11.5, .semibold))
                         .fixedSize()
+                        .transition(.opacity.combined(with: .scale(scale: 0.85, anchor: .leading)))
                 }
             }
             .foregroundStyle(Color.white.opacity(isSelected ? 1 : (isHovered ? 0.86 : 0.6)))
@@ -80,6 +86,7 @@ private struct TabButton: View {
             .frame(width: showsLabel ? nil : 46, height: Layout.tabRailHeight - 8)
             .modifier(Lens(isSelected: isSelected, isHovered: isHovered, tab: tab, glass: glass))
             .contentShape(Rectangle())
+            .geometryGroup()
         }
         .buttonStyle(.plain)
         .onGeometryChange(for: CGRect.self) { proxy in
@@ -102,13 +109,9 @@ private struct Lens: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *), isSelected {
             content
+                .background { Capsule().fill(Color.white.opacity(0.09 * fade)) }
                 .glassEffect(.regular.interactive(), in: Capsule())
                 .glassEffectID("selection", in: glass)
-                .overlay {
-                    Capsule()
-                        .strokeBorder(Bezel.specular(1.4 * fade), lineWidth: 0.9)
-                        .allowsHitTesting(false)
-                }
         } else {
             content.background {
                 if isSelected {

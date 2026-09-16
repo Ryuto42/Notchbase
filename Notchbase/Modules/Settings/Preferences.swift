@@ -14,7 +14,6 @@ final class Preferences {
     var defaultTab: NotchTab = .media { didSet { store(defaultTab.rawValue, Key.defaultTab) } }
     var resumeSeconds: Double = 5 { didSet { store(resumeSeconds, Key.resumeSeconds) } }
     var hoverDelayMs: Int = 250 { didSet { store(hoverDelayMs, Key.hoverDelay) } }
-    var nudgeMs: Int = 120 { didSet { store(nudgeMs, Key.nudge) } }
     var tabHoverDelayMs: Int = 130 { didSet { store(tabHoverDelayMs, Key.tabHoverDelay) } }
 
     var launchAtLogin: Bool = false {
@@ -95,6 +94,7 @@ final class Preferences {
     }
 
     var motionStyle: MotionStyle = .balanced { didSet { store(motionStyle.rawValue, Key.motion) } }
+    var motionBounce: Double = 1 { didSet { store(motionBounce, Key.motionBounce) } }
 
     // MARK: - Activity strip
 
@@ -171,13 +171,13 @@ final class Preferences {
         Key.resumeSeconds: 5.0,
         Key.hoverDelay: 250,
         Key.tabHoverDelay: 130,
-        Key.nudge: 120,
         Key.bottomFade: true,
         Key.bottomFadeAmount: 0.55,
         Key.tabRailOpacity: 0.82,
         Key.clearGlass: true,
         Key.tabLabels: true,
         Key.motion: MotionStyle.balanced.rawValue,
+        Key.motionBounce: 1.0,
         Key.activityStrip: true,
         Key.activityPriority: ActivityPriority.agents.rawValue,
         Key.announce: 8.0,
@@ -208,13 +208,13 @@ final class Preferences {
         resumeSeconds = defaults.double(forKey: Key.resumeSeconds)
         hoverDelayMs = defaults.integer(forKey: Key.hoverDelay)
         tabHoverDelayMs = defaults.integer(forKey: Key.tabHoverDelay)
-        nudgeMs = defaults.integer(forKey: Key.nudge)
         bottomFade = defaults.bool(forKey: Key.bottomFade)
         bottomFadeAmount = defaults.double(forKey: Key.bottomFadeAmount)
         clearGlassRail = defaults.bool(forKey: Key.clearGlass)
         tabRailOpacity = defaults.double(forKey: Key.tabRailOpacity)
         showTabLabels = defaults.bool(forKey: Key.tabLabels)
         motionStyle = MotionStyle(rawValue: defaults.string(forKey: Key.motion) ?? "") ?? .balanced
+        motionBounce = defaults.double(forKey: Key.motionBounce)
         showActivityStrip = defaults.bool(forKey: Key.activityStrip)
         activityPriority = ActivityPriority(rawValue: defaults.string(forKey: Key.activityPriority) ?? "") ?? .agents
         announceSeconds = defaults.double(forKey: Key.announce)
@@ -245,7 +245,6 @@ final class Preferences {
         static let resumeSeconds = "resumeSeconds"
         static let hoverDelay = "hoverDelayMs"
         static let tabHoverDelay = "tabHoverDelayMs"
-        static let nudge = "nudgeMs"
         static let tabOrder = "tabOrder"
         static let hiddenTabs = "hiddenTabs"
         static let language = "language"
@@ -255,6 +254,7 @@ final class Preferences {
         static let tabRailOpacity = "tabRailOpacity"
         static let tabLabels = "showTabLabels"
         static let motion = "motionStyle"
+        static let motionBounce = "motionBounce"
         static let activityStrip = "showActivityStrip"
         static let activityPriority = "activityPriority"
         static let announce = "announceSeconds"

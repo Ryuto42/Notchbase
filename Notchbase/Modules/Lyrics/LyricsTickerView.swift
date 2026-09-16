@@ -3,6 +3,7 @@ import SwiftUI
 struct LyricsTickerView: View {
     var controller: LyricsController
     var position: Double
+    var onSeek: (Double) -> Void
 
     private static let lineHeight: CGFloat = 19
     private static let visibleLines: CGFloat = 3.2
@@ -32,9 +33,22 @@ struct LyricsTickerView: View {
 
     private var anchor: Int { max(0, index ?? 0) }
 
+    private var syncedOffset: CGFloat {
+        -CGFloat(max(0, anchor - 1)) * Self.lineHeight
+    }
+
     private var offset: CGFloat {
         if let manualOffset, Date() < manualUntil { return manualOffset }
-        return -CGFloat(max(0, anchor - 1)) * Self.lineHeight
+        return syncedOffset
+    }
+
+    private var minOffset: CGFloat {
+        -max(0, CGFloat(controller.lines.count) - Self.visibleLines) * Self.lineHeight
+    }
+
+    private func scroll(by delta: CGFloat) {
+        manualOffset = min(0, max(minOffset, (manualOffset ?? syncedOffset) + delta))
+        manualUntil = Date().addingTimeInterval(6)
     }
 
     private var synced: some View {
@@ -48,6 +62,12 @@ struct LyricsTickerView: View {
                     .lineLimit(1)
                     .frame(height: Self.lineHeight, alignment: .leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        manualOffset = nil
+                        manualUntil = .distantPast
+                        onSeek(entry.time - Preferences.shared.lyricsOffset)
+                    }
                     .animation(Motion.lyricEmphasis, value: distance == 0)
             }
         }
@@ -55,14 +75,10 @@ struct LyricsTickerView: View {
         .animation(Motion.lyric, value: offset)
         .frame(height: Self.lineHeight * Self.visibleLines, alignment: .top)
         .contentShape(Rectangle())
+        .overlay { ScrollWheelCatcher { scroll(by: $0) } }
         .gesture(
             DragGesture(minimumDistance: 3)
-                .onChanged { value in
-                    let base = manualOffset ?? -CGFloat(max(0, anchor - 1)) * Self.lineHeight
-                    manualOffset = base + value.translation.height / 6
-                    manualUntil = Date().addingTimeInterval(6)
-                }
-                .onEnded { _ in manualUntil = Date().addingTimeInterval(6) }
+                .onChanged { value in scroll(by: value.translation.height / 6) }
         )
         .onChange(of: anchor) { _, _ in
             if Date() >= manualUntil { manualOffset = nil }
@@ -119,6 +135,50 @@ struct LyricsTickerView: View {
         case .instrumental: L.t(L.t("Marked instrumental on LRCLIB"))
         case .notFound: L.t(L.t("LRCLIB has no lyrics for this track"))
         default: ""
+        }
+    }
+}
+
+private struct ScrollWheelCatcher: NSViewRepresentable {
+    var onScroll: (CGFloat) -> Void
+
+    func makeNSView(context: Context) -> NSView { CatcherView(onScroll: onScroll) }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        (nsView as? CatcherView)?.onScroll = onScroll
+    }
+
+    private final class CatcherView: NSView {
+        var onScroll: (CGFloat) -> Void
+        private var monitor: Any?
+
+        init(onScroll: @escaping (CGFloat) -> Void) {
+            self.onScroll = onScroll
+            super.init(frame: .zero)
+        }
+
+        required init?(coder: NSCoder) { fatalError() }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window == nil {
+                if let monitor { NSEvent.removeMonitor(monitor) }
+                monitor = nil
+                return
+            }
+            guard monitor == nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                guard let self, let window = self.window, event.window === window else { return event }
+                let local = self.convert(event.locationInWindow, from: nil)
+                guard self.bounds.contains(local) else { return event }
+                let delta = event.hasPreciseScrollingDeltas
+                    ? event.scrollingDeltaY
+                    : event.scrollingDeltaY * 6
+                self.onScroll(delta)
+                return nil
+            }
         }
     }
 }

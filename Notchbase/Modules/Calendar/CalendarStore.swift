@@ -20,6 +20,7 @@ final class CalendarStore {
     }
 
     private(set) var entries: [Entry] = []
+    private(set) var eventDays: Set<Date> = []
     private(set) var accessGranted = false
 
     func applyDemo(_ demo: [Entry]) {
@@ -109,8 +110,9 @@ final class CalendarStore {
         guard accessGranted else { return }
         let calendar = Calendar.current
         let now = Date()
-        let monthStart = calendar.dateInterval(of: .month, for: anchor)?.start ?? now
-        let monthEnd = calendar.dateInterval(of: .month, for: anchor)?.end ?? now
+        let month = calendar.dateInterval(of: .month, for: anchor)
+        let monthStart = (month?.start).flatMap { calendar.date(byAdding: .day, value: -7, to: $0) } ?? now
+        let monthEnd = (month?.end).flatMap { calendar.date(byAdding: .day, value: 14, to: $0) } ?? now
         let listStart = selectedDay.map { calendar.startOfDay(for: $0) } ?? now
         let listEnd = calendar.date(byAdding: .day, value: 7, to: listStart) ?? listStart
         let start = min(now, monthStart, listStart)
@@ -127,6 +129,7 @@ final class CalendarStore {
                       isAllDay: $0.isAllDay,
                       color: $0.calendar?.color)
             }
+        eventDays = Set(entries.map { calendar.startOfDay(for: $0.start) })
     }
 
     // MARK: - Editing
@@ -278,8 +281,16 @@ final class CalendarStore {
     }
 
     func hasEvents(on day: Date) -> Bool {
+        eventDays.contains(Calendar.current.startOfDay(for: day))
+    }
+
+    func focusToday() {
         let calendar = Calendar.current
-        return entries.contains { calendar.isDate($0.start, inSameDayAs: day) }
+        let changed = !calendar.isDate(anchor, equalTo: Date(), toGranularity: .month)
+            || selectedDay != nil
+        anchor = Date()
+        selectedDay = nil
+        if changed { reload() }
     }
 
     func shiftMonth(by value: Int) {

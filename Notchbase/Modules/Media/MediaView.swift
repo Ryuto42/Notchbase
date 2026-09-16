@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MediaView: View {
     var model: NotchViewModel
+    var island: Namespace.ID
 
     private var media: MediaCoordinator { model.media }
 
@@ -17,7 +18,7 @@ struct MediaView: View {
 
     private func player(_ playing: NowPlaying) -> some View {
         HStack(spacing: 0) {
-            NowPlayingColumn(model: model, playing: playing)
+            NowPlayingColumn(model: model, playing: playing, island: island)
                 .frame(maxWidth: .infinity)
 
             Rectangle()
@@ -74,6 +75,7 @@ struct MediaView: View {
 private struct NowPlayingColumn: View {
     var model: NotchViewModel
     var playing: NowPlaying
+    var island: Namespace.ID
 
     private var media: MediaCoordinator { model.media }
 
@@ -85,12 +87,8 @@ private struct NowPlayingColumn: View {
                 } label: {
                     ArtworkView(image: media.artwork, size: 62, radius: 11)
                         .contentShape(Rectangle())
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.32, anchor: .topLeading)
-                                .combined(with: .opacity),
-                            removal: .scale(scale: 0.26, anchor: .topLeading)
-                                .combined(with: .opacity)
-                                .animation(Motion.withdraw)))
+                        .matchedGeometryEffect(id: "artwork", in: island,
+                                               isSource: model.state == .expanded)
                 }
                 .buttonStyle(.plain)
                 .help("Open \(playing.source.rawValue)")
@@ -133,7 +131,9 @@ private struct NowPlayingColumn: View {
                 .frame(height: 1)
                 .padding(.top, 4)
 
-            LyricsTickerView(controller: model.lyrics, position: playing.position)
+            LyricsTickerView(controller: model.lyrics, position: playing.position) { seconds in
+                model.media.seek(toSeconds: seconds)
+            }
                 .padding(.top, 5)
 
             Spacer(minLength: 0)
@@ -171,6 +171,10 @@ private struct NowPlayingColumn: View {
         HStack(spacing: 0) {
             ToggleButton(symbol: "shuffle", isOn: playing.isShuffling,
                          tint: media.artworkAccent) { media.toggleShuffle() }
+            if let favorite = playing.isFavorite {
+                ToggleButton(symbol: favorite ? "heart.fill" : "heart", isOn: favorite,
+                             tint: media.artworkAccent) { media.toggleFavorite() }
+            }
             Spacer(minLength: 0)
             HStack(spacing: 2) {
                 TransportButton(symbol: "backward.fill", size: 15) { media.previous() }
@@ -185,6 +189,7 @@ private struct NowPlayingColumn: View {
                          tint: media.artworkAccent) { media.cycleRepeat() }
             OutputDeviceButton()
         }
+        .animation(Motion.quick, value: playing.isFavorite)
     }
 }
 

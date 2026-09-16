@@ -3,9 +3,8 @@ import AppKit
 struct NotchMetrics: Equatable {
     let screenFrame: CGRect
     let notchSize: CGSize
+    let notchCenterX: CGFloat
     let hasRealNotch: Bool
-
-    var notchCenterX: CGFloat { screenFrame.midX }
 
     static func measure(_ screen: NSScreen) -> NotchMetrics {
         let frame = screen.frame
@@ -18,12 +17,14 @@ struct NotchMetrics: Equatable {
             if width > 1 {
                 return NotchMetrics(screenFrame: frame,
                                     notchSize: CGSize(width: width, height: topInset),
+                                    notchCenterX: left.maxX + (right.minX - left.maxX) / 2,
                                     hasRealNotch: true)
             }
         }
 
         return NotchMetrics(screenFrame: frame,
                             notchSize: Layout.pseudoNotchSize,
+                            notchCenterX: frame.midX,
                             hasRealNotch: false)
     }
 

@@ -109,6 +109,13 @@ final class MediaCoordinator {
         }
     }
 
+    func toggleFavorite() {
+        guard let value = current?.isFavorite else { return }
+        activeAdapter?.setFavorite(!value)
+        current?.isFavorite = !value
+        scheduleRefresh()
+    }
+
     func toggleShuffle() {
         guard let playing = current else { return }
         activeAdapter?.setShuffle(!playing.isShuffling)
@@ -131,10 +138,15 @@ final class MediaCoordinator {
 
     func seek(toProgress progress: Double) {
         guard let playing = current, playing.duration > 0 else { return }
-        let seconds = progress * playing.duration
-        activeAdapter?.seek(to: seconds)
-        current?.position = seconds
-        anchor(seconds)
+        seek(toSeconds: progress * playing.duration)
+    }
+
+    func seek(toSeconds seconds: Double) {
+        guard let playing = current else { return }
+        let target = min(max(0, seconds), playing.duration)
+        activeAdapter?.seek(to: target)
+        current?.position = target
+        anchor(target)
     }
 
     // MARK: - Refresh

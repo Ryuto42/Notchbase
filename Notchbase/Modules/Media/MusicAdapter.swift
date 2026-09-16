@@ -18,11 +18,32 @@ final class MusicAdapter: MediaAdapter {
             on error
                 return "idle"
             end try
-            return nbState & tab & (name of nbTrack) & tab & (artist of nbTrack) & tab & (album of nbTrack) & tab & ((duration of nbTrack) as text) & tab & ((player position) as text) & tab & "" & tab & ((shuffle enabled) as text) & tab & ((song repeat) as text)
+            set nbFav to ""
+            try
+                set nbFav to (favorited of nbTrack) as text
+            on error
+                try
+                    set nbFav to (loved of nbTrack) as text
+                end try
+            end try
+            return nbState & tab & (name of nbTrack) & tab & (artist of nbTrack) & tab & (album of nbTrack) & tab & ((duration of nbTrack) as text) & tab & ((player position) as text) & tab & "" & tab & ((shuffle enabled) as text) & tab & ((song repeat) as text) & tab & nbFav
         end tell
         """
         guard let raw = runner.string(script) else { return nil }
         return SnapshotParser.parse(raw, source: .music, durationDivisor: 1)
+    }
+
+    func setFavorite(_ value: Bool) {
+        guard isRunning else { return }
+        runner.execute("""
+        tell application "Music"
+            try
+                set favorited of current track to \(value)
+            on error
+                set loved of current track to \(value)
+            end try
+        end tell
+        """)
     }
 
     func upNext() -> [QueueEntry] {

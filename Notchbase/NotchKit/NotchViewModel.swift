@@ -12,7 +12,7 @@ final class NotchViewModel {
 
     private var storedTab: NotchTab = Preferences.shared.defaultTab
     var isDropTargeted = false
-    var isNudging = false
+    var isVisible = false
 
     @ObservationIgnored let tray = TrayStore()
     @ObservationIgnored let thumbnails = TrayThumbnailer()

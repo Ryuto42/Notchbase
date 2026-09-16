@@ -3,6 +3,7 @@ import SwiftUI
 struct ActivityStripView: View {
     var model: NotchViewModel
     var alignment: Alignment
+    var island: Namespace.ID
 
     var body: some View {
         Group {
@@ -13,9 +14,8 @@ struct ActivityStripView: View {
             }
         }
         .id(model.activity)
-        .transition(.asymmetric(
-            insertion: .offset(y: 10).combined(with: .opacity),
-            removal: .offset(y: -10).combined(with: .opacity)))
+        .transition(.asymmetric(insertion: .island.animation(Motion.morph.delay(0.10)),
+                                removal: .island.animation(Motion.morph)))
         .animation(Motion.morph, value: model.activity)
     }
 
@@ -47,6 +47,8 @@ struct ActivityStripView: View {
         if let playing = model.media.current {
             if alignment == .leading {
                 ArtworkView(image: model.media.artwork, size: 22, radius: 5.5)
+                    .matchedGeometryEffect(id: "artwork", in: island,
+                                           isSource: model.state == .activity)
                     .overlay {
                         RoundedRectangle(cornerRadius: 5.5, style: .continuous)
                             .strokeBorder((model.media.artworkTint ?? Theme.accent).opacity(0.5),

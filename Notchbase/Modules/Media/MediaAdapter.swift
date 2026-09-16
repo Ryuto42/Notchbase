@@ -13,6 +13,7 @@ protocol MediaAdapter: AnyObject {
     func setRepeat(_ mode: RepeatMode)
     func activate()
     func artwork(for playing: NowPlaying) async -> NSImage?
+    func setFavorite(_ value: Bool)
 
     func playPause()
     func next()
@@ -27,6 +28,7 @@ extension MediaAdapter {
     func setShuffle(_ enabled: Bool) {}
     func setRepeat(_ mode: RepeatMode) {}
     func activate() {}
+    func setFavorite(_ value: Bool) {}
 }
 
 struct QueueEntry: Identifiable, Hashable {
@@ -62,7 +64,8 @@ enum SnapshotParser {
             position: Double(fields[5]) ?? 0,
             artworkURL: fields.count >= 7 ? URL(string: fields[6]) : nil,
             isShuffling: fields.count >= 8 && fields[7] == "true",
-            repeatMode: fields.count >= 9 ? repeatMode(fields[8]) : .off
+            repeatMode: fields.count >= 9 ? repeatMode(fields[8]) : .off,
+            isFavorite: fields.count >= 10 && !fields[9].isEmpty ? fields[9] == "true" : nil
         )
     }
 }

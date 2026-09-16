@@ -7,23 +7,14 @@ enum NotchCoordinateSpace {
 struct NotchRootView: View {
     var model: NotchViewModel
 
+    @Namespace private var island
+
     private var size: CGSize { model.bodySize }
     private var isOpen: Bool { model.state == .expanded }
     private var topRadius: CGFloat { Layout.topRadius(for: model.state) }
 
-    private var floorSize: CGSize {
-        CGSize(width: model.metrics.notchSize.width + 2 * Layout.closedTopRadius,
-               height: model.metrics.notchSize.height)
-    }
-
     private var stateAnimation: Animation {
         model.state == .expanded ? Motion.open : Motion.close
-    }
-
-    private var breath: CGSize {
-        model.isNudging && model.state != .expanded
-            ? CGSize(width: 1.055, height: 1.16)
-            : CGSize(width: 1, height: 1)
     }
 
     var body: some View {
@@ -76,12 +67,12 @@ struct NotchRootView: View {
             Theme.innerHighlight.opacity(isOpen ? 1 : 0)
             content
         }
-        .frame(width: max(size.width + 2 * topRadius, floorSize.width),
-               height: max(size.height, floorSize.height))
+        .frame(width: max(size.width + 2 * topRadius, model.metrics.notchSize.width),
+               height: max(size.height, model.metrics.notchSize.height))
         .clipShape(outline)
         .glassBezel(outline,
                     width: isOpen ? 7 : 3,
-                    strength: isOpen ? 1 : 0,
+                    strength: isOpen ? 0.35 : 0,
                     fadeTop: model.metrics.notchSize.height / max(size.height, 1),
                     fadeBottom: fadeHeight / max(size.height, 1))
         .background(alignment: .top) {
@@ -90,9 +81,8 @@ struct NotchRootView: View {
                 .frame(width: model.metrics.notchSize.width,
                        height: model.metrics.notchSize.height)
         }
-        .opacity(model.state == .closed && !model.isNudging ? 0 : 1)
-        .scaleEffect(x: breath.width, y: breath.height, anchor: .top)
-        .animation(model.isNudging ? Motion.breath : Motion.breathOut, value: model.isNudging)
+        .opacity(model.isVisible ? 1 : 0)
+        .animation(nil, value: model.isVisible)
     }
 
     private var content: some View {
@@ -101,11 +91,11 @@ struct NotchRootView: View {
             if isOpen {
                 tabContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.opacity)
+                    .transition(.opacity.animation(.linear(duration: 0.09)))
             }
         }
         .padding(.horizontal, topRadius)
-        .transition(.offset(y: -26).combined(with: .opacity))
+        .transition(.island)
         .clipped()
         .animation(stateAnimation, value: model.state)
     }
@@ -121,15 +111,17 @@ struct NotchRootView: View {
 
     private func headerSide(alignment: Alignment) -> some View {
         ZStack(alignment: alignment) {
-            ActivityStripView(model: model, alignment: alignment)
-                .opacity(model.state == .activity ? 1 : 0)
-                .animation(isOpen ? Motion.quick : Motion.settle, value: model.state)
-            ExpandedHeaderView(model: model, alignment: alignment)
-                .opacity(isOpen ? 1 : 0)
-                .allowsHitTesting(isOpen)
+            if model.state == .activity {
+                ActivityStripView(model: model, alignment: alignment, island: island)
+                    .transition(.opacity.animation(.linear(duration: 0.07)))
+            }
+            if isOpen {
+                ExpandedHeaderView(model: model, alignment: alignment)
+                    .transition(.opacity)
+            }
         }
         .frame(width: model.sideWidth(for: size), alignment: alignment)
-        .animation(Motion.content, value: model.state)
+        .animation(stateAnimation, value: model.state)
     }
 
     @ViewBuilder
@@ -137,10 +129,12 @@ struct NotchRootView: View {
         switch model.tab {
         case .tray: TrayView(model: model)
         case .clipboard: ClipboardView(store: model.clipboard) { model.onClose?() }
-        case .media: MediaView(model: model)
+        case .media: MediaView(model: model, island: island)
         case .terminal: TerminalPane()
         case .agents: AgentsView(monitor: model.agents) { model.onOpenProject?($0) }
-        case .calendar: CalendarPane(store: model.calendar)
+        case .calendar:
+            CalendarPane(store: model.calendar)
+                .onAppear { model.calendar.focusToday() }
         }
     }
 }

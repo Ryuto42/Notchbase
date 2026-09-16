@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct NotchShape: Shape, InsettableShape {
+nonisolated struct NotchShape: Shape, InsettableShape {
     var topRadius: CGFloat
     var bottomRadius: CGFloat
     var inset: CGFloat = 0

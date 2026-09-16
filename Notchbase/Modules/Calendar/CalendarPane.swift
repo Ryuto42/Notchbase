@@ -58,15 +58,12 @@ private struct MonthGrid: View {
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: 7)
 
-    private var days: [Date?] {
+    private var days: [Date] {
         guard let interval = calendar.dateInterval(of: .month, for: store.anchor) else { return [] }
         let first = interval.start
         let leading = (calendar.component(.weekday, from: first) - calendar.firstWeekday + 7) % 7
-        let count = calendar.range(of: .day, in: .month, for: first)?.count ?? 30
-        let dates = (0..<count).compactMap { calendar.date(byAdding: .day, value: $0, to: first) }
-        var cells: [Date?] = Array(repeating: nil, count: leading) + dates.map { Optional($0) }
-        cells.append(contentsOf: Array(repeating: nil, count: max(0, 42 - cells.count)))
-        return cells
+        guard let start = calendar.date(byAdding: .day, value: -leading, to: first) else { return [] }
+        return (0..<42).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
     }
 
     private var weekdaySymbols: [String] {
@@ -87,8 +84,10 @@ private struct MonthGrid: View {
                 }
             }
             LazyVGrid(columns: columns, spacing: 1) {
-                ForEach(Array(days.enumerated()), id: \.offset) { _, day in
-                    DayCell(day: day, store: store)
+                ForEach(days, id: \.self) { day in
+                    DayCell(day: day,
+                            store: store,
+                            inMonth: calendar.isDate(day, equalTo: store.anchor, toGranularity: .month))
                 }
             }
             Spacer(minLength: 0)
@@ -111,53 +110,52 @@ private struct MonthGrid: View {
 }
 
 private struct DayCell: View {
-    var day: Date?
+    var day: Date
     var store: CalendarStore
+    var inMonth: Bool
 
     @State private var hovering = false
 
-    private let calendar = Calendar.current
+    private static let calendar = Calendar.current
 
     var body: some View {
-        if let day {
-            let isToday = calendar.isDateInToday(day)
-            let isSelected = store.selectedDay.map { calendar.isDate($0, inSameDayAs: day) } ?? false
+        let calendar = Self.calendar
+        let isToday = calendar.isDateInToday(day)
+        let isSelected = store.selectedDay.map { calendar.isDate($0, inSameDayAs: day) } ?? false
 
-            Button {
-                store.select(day)
-            } label: {
-                VStack(spacing: 1.5) {
-                    Text("\(calendar.component(.day, from: day))")
-                        .font(Typo.digits(10.5, isToday || isSelected ? .bold : .medium))
-                        .foregroundStyle(isToday ? .black : Theme.primaryText)
-                    Circle()
-                        .fill(store.hasEvents(on: day) ? (isToday ? .black : Theme.accent) : .clear)
-                        .frame(width: 3, height: 3)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 22)
-                .background {
-                    if isToday {
-                        Circle().fill(Theme.accent).frame(width: 22, height: 22)
-                    } else if hovering {
-                        Circle().fill(Color.white.opacity(0.12)).frame(width: 22, height: 22)
-                    }
-                }
-                .overlay {
-                    if isSelected {
-                        Circle()
-                            .strokeBorder(Theme.warm, lineWidth: 1.4)
-                            .frame(width: 22, height: 22)
-                    }
-                }
-                .contentShape(Rectangle())
+        Button {
+            store.select(day)
+        } label: {
+            VStack(spacing: 1.5) {
+                Text("\(calendar.component(.day, from: day))")
+                    .font(Typo.digits(10.5, isToday || isSelected ? .bold : .medium))
+                    .foregroundStyle(isToday ? .black : Theme.primaryText)
+                Circle()
+                    .fill(store.hasEvents(on: day) ? (isToday ? .black : Theme.accent) : .clear)
+                    .frame(width: 3, height: 3)
             }
-            .buttonStyle(.plain)
-            .onHover { hovering = $0 }
-            .animation(Motion.quick, value: hovering)
-        } else {
-            Color.clear.frame(height: 22)
+            .opacity(inMonth ? 1 : 0.34)
+            .frame(maxWidth: .infinity)
+            .frame(height: 22)
+            .background {
+                if isToday {
+                    Circle().fill(Theme.accent).frame(width: 22, height: 22)
+                } else if hovering {
+                    Circle().fill(Color.white.opacity(0.12)).frame(width: 22, height: 22)
+                }
+            }
+            .overlay {
+                if isSelected {
+                    Circle()
+                        .strokeBorder(Theme.warm, lineWidth: 1.4)
+                        .frame(width: 22, height: 22)
+                }
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(Motion.quick, value: hovering)
     }
 }
 
@@ -175,7 +173,8 @@ private struct UpcomingList: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        let upcoming = store.upcoming
+        return VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 Text(headline)
                     .font(.system(size: 11.5, weight: .semibold))
@@ -197,7 +196,7 @@ private struct UpcomingList: View {
             .padding(.trailing, 10)
             .padding(.top, 2)
 
-            if store.upcoming.isEmpty {
+            if upcoming.isEmpty {
                 VStack(spacing: 6) {
                     Image(systemName: "calendar")
                         .font(.system(size: 17, weight: .light))
@@ -206,18 +205,27 @@ private struct UpcomingList: View {
                 }
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity)
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 3) {
-                        ForEach(store.upcoming) { entry in
+                        ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, entry in
                             EventRow(entry: entry) { store.edit(entry) }
+                                .transition(.asymmetric(
+                                    insertion: .opacity
+                                        .combined(with: .offset(x: 18))
+                                        .animation(Motion.content.delay(min(Double(index), 6) * 0.035)),
+                                    removal: .opacity.combined(with: .offset(x: -10))
+                                        .animation(Motion.withdraw)))
                         }
                     }
                     .padding(.horizontal, 10)
                     .padding(.bottom, 4)
                 }
+                .transition(.opacity)
             }
         }
+        .animation(Motion.content, value: upcoming.map(\.id))
     }
 }
 

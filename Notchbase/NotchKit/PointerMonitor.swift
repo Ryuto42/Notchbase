@@ -7,7 +7,7 @@ final class PointerMonitor {
     var onClick: ((CGPoint) -> Void)?
 
     private var monitors: [Any] = []
-    private var lastDragChangeCount = NSPasteboard(name: .drag).changeCount
+    private var rejectedChangeCount = 0
     private var isFileDragging = false
 
     func start() {
@@ -34,10 +34,14 @@ final class PointerMonitor {
     private func handleDrag() {
         if !isFileDragging {
             let pasteboard = NSPasteboard(name: .drag)
-            guard pasteboard.changeCount != lastDragChangeCount else { return }
-            lastDragChangeCount = pasteboard.changeCount
+            guard pasteboard.changeCount != rejectedChangeCount else { return }
             let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
-            guard pasteboard.canReadObject(forClasses: [NSURL.self], options: options) else { return }
+            guard pasteboard.canReadObject(forClasses: [NSURL.self], options: options) else {
+                if pasteboard.types?.isEmpty == false {
+                    rejectedChangeCount = pasteboard.changeCount
+                }
+                return
+            }
             isFileDragging = true
         }
         onFileDragMove?(NSEvent.mouseLocation)

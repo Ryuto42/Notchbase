@@ -26,10 +26,10 @@ enum L {
 
     private static let japanese: [String: String] = [
         "Tray": "トレイ",
+        "Bounce": "跳ね",
+        "0 removes overshoot entirely and everything eases to a stop. Higher values let the panel and the tab switcher spring past their target before settling.": "0 で行き過ぎがなくなり、すべてが減速して止まります。上げるとパネルや切り替えバーが目標を通り過ぎてから落ち着きます。",
         "Colour from the album art": "ジャケットから色を取る",
         "The playing bars and the scrubber take their colour from the current cover. Artwork with no colour in it falls back to the standard blue.": "再生バーとシークバーの色を、再生中のジャケットから取ります。色味のないアートワークでは標準の青に戻ります。",
-        "Anticipation": "予備動作",
-        "The notch swells briefly before the panel comes out of it. Set to 0 to open straight away.": "パネルが出てくる前にノッチが少しだけ膨らみます。0 にすると即座に開きます。",
         "Notes": "メモ",
         "New event": "予定を追加",
         "Edit event": "予定を編集",

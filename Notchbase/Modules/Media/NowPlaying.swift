@@ -27,6 +27,7 @@ struct NowPlaying: Equatable {
     var artworkURL: URL?
     var isShuffling: Bool = false
     var repeatMode: RepeatMode = .off
+    var isFavorite: Bool?
 
     var trackKey: String { "\(source.rawValue)|\(artist)|\(title)|\(album)" }
 

@@ -10,6 +10,7 @@ final class NotchController {
     private let settings = SettingsWindowController()
 
     private var transitionTask: Task<Void, Never>?
+    private var hideTask: Task<Void, Never>?
     private var idleTimer: Timer?
     private var pendingState: NotchState?
     private var lastPointer = NSEvent.mouseLocation
@@ -24,7 +25,7 @@ final class NotchController {
     init() {
         let screen = NotchMetrics.preferredScreen()
         metrics = screen.map(NotchMetrics.measure)
-            ?? NotchMetrics(screenFrame: .zero, notchSize: Layout.pseudoNotchSize, hasRealNotch: false)
+            ?? NotchMetrics(screenFrame: .zero, notchSize: Layout.pseudoNotchSize, notchCenterX: 0, hasRealNotch: false)
         model = NotchViewModel(metrics: metrics)
     }
 
@@ -173,21 +174,33 @@ final class NotchController {
 
         self.panel = panel
         self.container = container
-        apply(idleState, animated: false)
+        apply(idleState)
     }
 
     // MARK: - State
 
-    func apply(_ state: NotchState, animated: Bool = true) {
+    func apply(_ state: NotchState) {
         if let forcedState, state != forcedState { return }
         guard model.state != state else {
             syncHitArea()
             return
         }
         cancelTransition()
+        hideTask?.cancel()
+        if state == .closed {
+            hideTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(Motion.stateDuration))
+                guard !Task.isCancelled, let self, self.model.state == .closed else { return }
+                self.model.isVisible = false
+            }
+        } else if !model.isVisible {
+            model.isVisible = true
+            DispatchQueue.main.async { [weak self] in self?.apply(state) }
+            return
+        }
         Debug.log("\(model.state) -> \(state) tab=\(model.tab) key=\(panel?.isKeyWindow == true) ignoreMouse=\(panel?.ignoresMouseEvents == true)")
         if state == .expanded, model.state != .expanded, !isDebugPinned {
-            if Date().timeIntervalSince(collapsedAt) > Preferences.shared.resumeSeconds {
+            if !isFileDragging, Date().timeIntervalSince(collapsedAt) > Preferences.shared.resumeSeconds {
                 let wanted = Preferences.shared.defaultTab
                 model.tab = Preferences.shared.isVisible(wanted)
                     ? wanted
@@ -279,26 +292,6 @@ final class NotchController {
         transitionTask?.cancel()
         transitionTask = nil
         pendingState = nil
-        model.isNudging = false
-    }
-
-    private func scheduleExpand() {
-        guard pendingState != .expanded else { return }
-        transitionTask?.cancel()
-        pendingState = .expanded
-        transitionTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(max(0, Preferences.shared.hoverDelayMs)))
-            guard !Task.isCancelled, let self else { return }
-            self.model.isNudging = true
-            try? await Task.sleep(for: .milliseconds(Preferences.shared.nudgeMs))
-            guard !Task.isCancelled else {
-                self.model.isNudging = false
-                return
-            }
-            self.model.isNudging = false
-            self.pendingState = nil
-            self.apply(.expanded)
-        }
     }
 
     // MARK: - Geometry
@@ -366,7 +359,7 @@ final class NotchController {
             }
         case .closed, .activity:
             if isInHoverZone(point) {
-                scheduleExpand()
+                schedule(.expanded, after: .milliseconds(max(0, Preferences.shared.hoverDelayMs)))
             } else {
                 cancelTransition()
             }
@@ -432,11 +425,9 @@ final class NotchController {
 
         if dropTriggerZone.contains(point) || overPanel {
             cancelTransition()
-            if model.state != .expanded {
-                guard Preferences.shared.isVisible(.tray) else { return }
-                model.tab = .tray
-                apply(.expanded)
-            }
+            guard Preferences.shared.isVisible(.tray) else { return }
+            apply(.expanded)
+            if model.tab != .tray { model.tab = .tray }
         } else if model.state == .expanded {
             schedule(idleState, after: .milliseconds(180))
         }

@@ -62,12 +62,6 @@ private struct GeneralSettings: View {
                           range: 0...600, step: 25, format: "%.0f ms")
                 Hint(L.t("How long the pointer rests on the notch before the panel opens. A short delay stops it firing when you reach for the menu bar."))
 
-                SliderRow(title: L.t("Anticipation"),
-                          value: Binding(get: { Double(prefs.nudgeMs) },
-                                         set: { prefs.nudgeMs = Int($0) }),
-                          range: 0...300, step: 10, format: "%.0f ms")
-                Hint(L.t("The notch swells briefly before the panel comes out of it. Set to 0 to open straight away."))
-
                 SliderRow(title: L.t("Tab hover delay"),
                           value: Binding(get: { Double(prefs.tabHoverDelayMs) },
                                          set: { prefs.tabHoverDelayMs = Int($0) }),
@@ -133,6 +127,10 @@ private struct AppearanceSettings: View {
                 }
                 .pickerStyle(.segmented)
                 Hint(L.t("Scales every spring in the app. Snappy is roughly 30% quicker than balanced; calm is about 45% slower."))
+
+                SliderRow(title: L.t("Bounce"), value: $prefs.motionBounce,
+                          range: 0...2.5, step: 0.1, format: "%.1f×")
+                Hint(L.t("0 removes overshoot entirely and everything eases to a stop. Higher values let the panel and the tab switcher spring past their target before settling."))
             }
         }
         .formStyle(.grouped)
