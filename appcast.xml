@@ -3,6 +3,15 @@
     <channel>
         <title>Notchbase</title>
         <item>
+            <title>0.3.0</title>
+            <pubDate>Wed, 16 Sep 2026 20:41:44 +0900</pubDate>
+            <link>https://github.com/Ryuto42/Notchbase</link>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.3.0/Notchbase-0.3.0.zip" length="6095858" type="application/octet-stream" sparkle:edSignature="WJeawr0CoBZ7FA25ml1vt+hVFzfRYTGcX39fXNsArSvq5Gzi4BYFWq9PCZTk9ULtwIxMF54EsyRd+baHcpWBBg=="/>
+        </item>
+        <item>
             <title>0.2.0</title>
             <pubDate>Sun, 30 Aug 2026 22:26:14 +0900</pubDate>
             <link>https://github.com/Ryuto42/Notchbase</link>
