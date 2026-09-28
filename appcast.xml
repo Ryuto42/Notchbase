@@ -3,6 +3,15 @@
     <channel>
         <title>Notchbase</title>
         <item>
+            <title>0.4.0</title>
+            <pubDate>Mon, 28 Sep 2026 14:43:02 +0900</pubDate>
+            <link>https://github.com/Ryuto42/Notchbase</link>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.4.0/Notchbase-0.4.0.zip" length="6451177" type="application/octet-stream" sparkle:edSignature="t9KFVr46DWl9XymXSNAE3aQSUyaMCuMvWOoMwEehUUPjF39sHgRJKv33Tv93JpXh3AtHoGahpw3Ap9COi2OeCg=="/>
+        </item>
+        <item>
             <title>0.3.0</title>
             <pubDate>Wed, 16 Sep 2026 20:41:44 +0900</pubDate>
             <link>https://github.com/Ryuto42/Notchbase</link>
@@ -19,15 +28,6 @@
             <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.2.0/Notchbase-0.2.0.zip" length="5891856" type="application/octet-stream" sparkle:edSignature="UBWBmBxazmImdAhVhu487HRiYc9WZoAXkgUr2suJNfUSeu2vey8Qin+h95IPARjxPXICeLoHWbDkq4zIadL4Cw=="/>
-        </item>
-        <item>
-            <title>0.1.0</title>
-            <pubDate>Sun, 30 Aug 2026 08:15:52 +0900</pubDate>
-            <link>https://github.com/Ryuto42/Notchbase</link>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.1.0/Notchbase-0.1.0.zip" length="5852596" type="application/octet-stream" sparkle:edSignature="sYv924l5Jc0vA6mwU3pWUagWosKa0pnpuF3CkEoBnVvmal1nBgTDmXdIk1SvcNPFmSUeR/xF43hW7/PxCB4dBw=="/>
         </item>
     </channel>
 </rss>
