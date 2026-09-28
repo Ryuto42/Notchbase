@@ -3,12 +3,12 @@ import SwiftUI
 struct ActivityStripView: View {
     var model: NotchViewModel
     var alignment: Alignment
-    var island: Namespace.ID
 
     var body: some View {
         Group {
             switch model.activity {
             case .agents: agents
+            case .clock: clock
             case .media: media
             case nil: Color.clear
             }
@@ -40,20 +40,45 @@ struct ActivityStripView: View {
         }
     }
 
+    // MARK: - Clock
+
+    @ViewBuilder
+    private var clock: some View {
+        let store = model.clock
+        let finished = store.alerting
+        let tint = finished || store.timerActive ? Theme.warm : Theme.accent
+        if alignment == .leading {
+            Image(systemName: finished ? "bell.fill"
+                  : store.timerActive ? (store.timerRunning ? "timer" : "pause.fill")
+                  : (store.stopwatchRunning ? "stopwatch" : "pause.fill"))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(tint)
+                .symbolEffect(.bounce, value: store.timerFinishedAt)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 10)
+        } else {
+            TimelineView(.periodic(from: .now, by: 0.5)) { context in
+                Text(finished ? "0:00"
+                     : store.timerActive ? ClockFormat.countdown(store.timerRemaining(at: context.date))
+                     : ClockFormat.elapsed(store.stopwatchElapsed(at: context.date), hundredths: false))
+                    .font(Typo.digits(13, .semibold))
+                    .foregroundStyle(tint)
+                    .contentTransition(.numericText())
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.trailing, 11)
+        }
+    }
+
     // MARK: - Media
 
     @ViewBuilder
     private var media: some View {
         if let playing = model.media.current {
             if alignment == .leading {
-                ArtworkView(image: model.media.artwork, size: 22, radius: 5.5)
-                    .matchedGeometryEffect(id: "artwork", in: island,
-                                           isSource: model.state == .activity)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 5.5, style: .continuous)
-                            .strokeBorder((model.media.artworkTint ?? Theme.accent).opacity(0.5),
-                                          lineWidth: 1)
-                    }
+                Color.clear
+                    .frame(width: 22, height: 22)
+                    .artworkSlot()
                     .padding(.leading, 8)
                     .help(playing.title)
             } else {
@@ -120,28 +145,67 @@ struct AudioBarsView: View {
 struct ArtworkView: View {
     var image: NSImage?
     var size: CGFloat
-    var radius: CGFloat
+    var ring: Color = .clear
+
+    private var identity: ObjectIdentifier? { image.map(ObjectIdentifier.init) }
 
     var body: some View {
-        Group {
-            if let image {
-                Image(nsImage: image).resizable().aspectRatio(contentMode: .fill)
-            } else {
-                Rectangle()
-                    .fill(Theme.card)
-                    .overlay {
-                        Image(systemName: "music.note")
-                            .font(.system(size: size * 0.38, weight: .medium))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
+        let shape = ArtworkShape()
+        ZStack {
+            Group {
+                if let image {
+                    Image(nsImage: image).resizable().aspectRatio(contentMode: .fill)
+                } else {
+                    Rectangle()
+                        .fill(Theme.card)
+                        .overlay {
+                            Image(systemName: "music.note")
+                                .font(.system(size: size * 0.38, weight: .medium))
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                }
             }
+            .id(identity)
+            .transition(.asymmetric(insertion: .scale(scale: 1.18).combined(with: .opacity),
+                                    removal: .scale(scale: 0.84).combined(with: .opacity)))
         }
+        .aspectRatio(1, contentMode: .fit)
+        .clipShape(shape)
+        .overlay { shape.strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5) }
+        .overlay { shape.strokeBorder(ring, lineWidth: 1) }
+        .animation(Motion.morph, value: identity)
         .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
-        }
+    }
+}
+
+nonisolated struct ArtworkSlotKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
+    }
+}
+
+extension View {
+    func artworkSlot() -> some View {
+        anchorPreference(key: ArtworkSlotKey.self, value: .bounds) { $0 }
+    }
+}
+
+nonisolated struct ArtworkShape: InsettableShape {
+    var ratio: CGFloat = 0.22
+    var inset: CGFloat = 0
+
+    func path(in rect: CGRect) -> Path {
+        let rect = rect.insetBy(dx: inset, dy: inset)
+        return RoundedRectangle(cornerRadius: min(rect.width, rect.height) * ratio, style: .continuous)
+            .path(in: rect)
+    }
+
+    func inset(by amount: CGFloat) -> ArtworkShape {
+        var copy = self
+        copy.inset += amount
+        return copy
     }
 }
 

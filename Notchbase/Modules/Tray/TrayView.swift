@@ -18,9 +18,9 @@ struct TrayView: View {
                     model.isDropTargeted = targeted
                 }
         }
-        .padding(.horizontal, 13)
+        .padding(.horizontal, 10)
         .padding(.top, 6)
-        .padding(.bottom, 10)
+        .padding(.bottom, 4)
     }
 
     private var fileColumn: some View {
@@ -35,7 +35,7 @@ struct TrayView: View {
                         }
                     }
                     .padding(.vertical, 8)
-                    .padding(.horizontal, 2)
+                    .padding(.horizontal, 10)
                 }
                 footer
             }
@@ -68,7 +68,7 @@ struct TrayView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Text("\(store.items.count) item\(store.items.count == 1 ? "" : "s")")
+            Text(L.count(store.items.count == 1 ? "%@ item" : "%@ items", store.items.count))
                 .font(Typo.rounded(9.5, .medium))
                 .foregroundStyle(Theme.tertiaryText)
             Spacer()
@@ -100,7 +100,7 @@ private struct AirDropZone: View {
                 Text(L.t("AirDrop"))
                     .font(Typo.rounded(11, .semibold))
                 if !trayURLs.isEmpty && !targeted {
-                    Text("Send \(trayURLs.count)")
+                    Text(L.count("Send %@", trayURLs.count))
                         .font(Typo.rounded(9))
                         .foregroundStyle(Theme.tertiaryText)
                 }
@@ -161,19 +161,19 @@ private struct TrayItemCell: View {
                 .resizable().frame(width: 52, height: 52)
         }
         .contextMenu {
-            Button("Open") { model.tray.open(item) }
-            Button("Reveal in Finder") { model.tray.reveal(item) }
+            Button(L.t("Open")) { model.tray.open(item) }
+            Button(L.t("Reveal in Finder")) { model.tray.reveal(item) }
             if let url {
                 Button(L.t("AirDrop")) { AirDrop.send([url]) }
                 if item.isDirectory {
-                    Button("Open in Terminal") {
+                    Button(L.t("Open in Terminal")) {
                         model.tab = .terminal
                         TerminalSession.shared.send("cd \(url.path.replacingOccurrences(of: " ", with: "\\ "))\n")
                     }
                 }
             }
             Divider()
-            Button("Remove") { model.tray.remove(item) }
+            Button(L.t("Remove")) { model.tray.remove(item) }
         }
         .help("\(item.name) — \(Format.bytes(item.byteSize))")
     }

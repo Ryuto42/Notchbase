@@ -29,12 +29,12 @@ struct ClipboardView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 4)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 2)
                 }
             }
         }
-        .padding(.bottom, 9)
+        .padding(.bottom, 4)
         .onChange(of: query) { _, new in store.query = new }
     }
 
@@ -42,7 +42,7 @@ struct ClipboardView: View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 9, weight: .semibold))
-            Text("Allow Notchbase under Privacy & Security › Accessibility to paste")
+            Text(L.t("Allow Notchbase under Privacy & Security › Accessibility to paste"))
                 .font(Typo.rounded(9.5, .medium))
             Spacer(minLength: 0)
         }

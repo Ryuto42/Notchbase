@@ -28,24 +28,29 @@ enum Layout {
     static let contentSize = CGSize(width: 620, height: 208)
 
     static let activityExtraWidth: CGFloat = 62
+    static func clockActivityExtraWidth(hourDigits: Int) -> CGFloat {
+        [100, 130, 140][min(max(hourDigits, 0), 2)]
+    }
     static let activityExtraHeight: CGFloat = 0
 
     static let hoverSlop: CGFloat = 3
     static let hoverSideSlop: CGFloat = 6
 
-    static func interactiveSize(for state: NotchState, metrics: NotchMetrics, tab: NotchTab) -> CGSize {
-        let body = bodySize(for: state, metrics: metrics, tab: tab)
+    static func interactiveSize(for state: NotchState, metrics: NotchMetrics, tab: NotchTab,
+                                activityWidth: CGFloat) -> CGSize {
+        let body = bodySize(for: state, metrics: metrics, tab: tab, activityWidth: activityWidth)
         guard state == .expanded else { return body }
         return CGSize(width: body.width, height: body.height + tabRailGap + tabRailHeight)
     }
 
-    static func bodySize(for state: NotchState, metrics: NotchMetrics, tab: NotchTab) -> CGSize {
+    static func bodySize(for state: NotchState, metrics: NotchMetrics, tab: NotchTab,
+                         activityWidth: CGFloat) -> CGSize {
         let notch = metrics.notchSize
         switch state {
         case .closed:
             return notch
         case .activity:
-            return CGSize(width: notch.width + activityExtraWidth,
+            return CGSize(width: notch.width + activityWidth,
                           height: notch.height + activityExtraHeight)
         case .expanded:
             return CGSize(width: max(contentSize.width, notch.width + 170),

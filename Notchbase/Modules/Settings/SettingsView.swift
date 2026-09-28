@@ -323,7 +323,7 @@ private struct AboutSettings: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent("Version", value: version)
+                LabeledContent(L.t("Version"), value: version)
                 LabeledContent(L.t("Requires"), value: L.t("macOS 15 or later"))
             }
 

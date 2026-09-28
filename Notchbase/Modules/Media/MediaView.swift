@@ -2,7 +2,6 @@ import SwiftUI
 
 struct MediaView: View {
     var model: NotchViewModel
-    var island: Namespace.ID
 
     private var media: MediaCoordinator { model.media }
 
@@ -18,7 +17,7 @@ struct MediaView: View {
 
     private func player(_ playing: NowPlaying) -> some View {
         HStack(spacing: 0) {
-            NowPlayingColumn(model: model, playing: playing, island: island)
+            NowPlayingColumn(model: model, playing: playing)
                 .frame(maxWidth: .infinity)
 
             Rectangle()
@@ -29,9 +28,8 @@ struct MediaView: View {
             UpNextColumn(media: media, source: playing.source)
                 .frame(width: 216)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
         .padding(.top, 4)
-        .padding(.bottom, 10)
         .background(alignment: .bottom) { ambience }
     }
 
@@ -75,7 +73,6 @@ struct MediaView: View {
 private struct NowPlayingColumn: View {
     var model: NotchViewModel
     var playing: NowPlaying
-    var island: Namespace.ID
 
     private var media: MediaCoordinator { model.media }
 
@@ -85,13 +82,18 @@ private struct NowPlayingColumn: View {
                 Button {
                     media.activatePlayer()
                 } label: {
-                    ArtworkView(image: media.artwork, size: 62, radius: 11)
-                        .contentShape(Rectangle())
-                        .matchedGeometryEffect(id: "artwork", in: island,
-                                               isSource: model.state == .expanded)
+                    Group {
+                        if model.activity == .media {
+                            Color.clear.frame(width: 62, height: 62)
+                        } else {
+                            ArtworkView(image: media.artwork, size: 62)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .artworkSlot()
                 }
                 .buttonStyle(.plain)
-                .help("Open \(playing.source.rawValue)")
+                .help(L.fill("Open %@", playing.source.rawValue))
 
                 Button {
                     media.activatePlayer()
@@ -112,7 +114,7 @@ private struct NowPlayingColumn: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Open \(playing.source.rawValue)")
+                .help(L.fill("Open %@", playing.source.rawValue))
 
                 Spacer(minLength: 6)
 
@@ -135,8 +137,7 @@ private struct NowPlayingColumn: View {
                 model.media.seek(toSeconds: seconds)
             }
                 .padding(.top, 5)
-
-            Spacer(minLength: 0)
+                .frame(maxHeight: .infinity, alignment: .top)
         }
         .padding(.trailing, 13)
     }

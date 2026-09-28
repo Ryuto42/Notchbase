@@ -57,10 +57,13 @@ struct AgentSession: Identifiable, Hashable {
     var directory: String?
 
     var turnOpen = false
+    var backgroundPending = false
+    var interrupted = false
 
     var status: Status {
         let age = Date().timeIntervalSince(lastActivity)
-        if turnOpen && age < 90 { return .working }
+        if turnOpen && age < 900 { return .working }
+        if backgroundPending && age < 3600 { return .working }
         if age < 1800 { return .waiting }
         return .finished
     }

@@ -2,7 +2,11 @@ import Foundation
 
 enum L {
     static func count(_ english: String, _ value: Int) -> String {
-        t(english).replacingOccurrences(of: "%@", with: "\(value)")
+        fill(english, "\(value)")
+    }
+
+    static func fill(_ english: String, _ value: String) -> String {
+        t(english).replacingOccurrences(of: "%@", with: value)
     }
 
     static func t(_ english: String) -> String {
@@ -80,6 +84,23 @@ enum L {
         "Terminal": "ターミナル",
         "Agents": "エージェント",
         "Calendar": "カレンダー",
+        "all day": "終日",
+        "Resume in %@": "%@ で再開",
+        "%@ item": "%@ 件",
+        "%@ items": "%@ 件",
+        "Send %@": "%@ 件を送信",
+        "Reveal in Finder": "Finder で表示",
+        "Open in Terminal": "ターミナルで開く",
+        "Remove": "削除",
+        "Open %@": "%@ を開く",
+        "Allow Notchbase under Privacy & Security › Accessibility to paste": "ペーストするには、プライバシーとセキュリティ › アクセシビリティで Notchbase を許可してください",
+        "Timer": "タイマー",
+        "Stopwatch": "ストップウォッチ",
+        "Presets": "プリセット",
+        "Laps": "ラップ",
+        "Laps appear here": "ラップがここに表示されます",
+        "Lap %@": "ラップ %@",
+        "Time's up": "時間です",
         "Drop files here": "ここにドロップ",
         "Release to stash": "離して保存",
         "Or drag anything to the top of the screen": "画面上端へドラッグしても開きます",

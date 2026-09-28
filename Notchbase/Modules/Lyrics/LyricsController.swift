@@ -17,7 +17,8 @@ final class LyricsController {
         status = .synced
     }
 
-    @ObservationIgnored private let client = LrclibClient()
+    @ObservationIgnored private let lrclib = LrclibClient()
+    @ObservationIgnored private let netease = NeteaseClient()
     @ObservationIgnored private let cacheDir = Paths.directory("Lyrics")
     @ObservationIgnored private var loadingKey: String?
 
@@ -47,15 +48,18 @@ final class LyricsController {
 
         Task { [weak self] in
             guard let self else { return }
-            let response = await client.lyrics(for: playing)
+            async let fromLrclib = self.lrclib.candidates(for: playing)
+            async let fromNetease = self.netease.candidates(for: playing)
+            let best = LyricsMatcher.best(of: await fromLrclib + (await fromNetease), for: playing)
             guard self.loadingKey == key else { return }
+            Debug.log("lyrics \(playing.title): \(best.map { "\($0.source.rawValue) synced=\($0.hasSynced)" } ?? "none")")
 
             let cached = Cached(
-                lines: LrcParser.parse(response?.syncedLyrics ?? ""),
-                plain: response?.plainLyrics,
-                instrumental: response?.instrumental ?? false
+                lines: LrcParser.parse(best?.synced ?? ""),
+                plain: best?.plain,
+                instrumental: best?.instrumental ?? false
             )
-            if response != nil {
+            if best != nil {
                 JSONStore.save(cached, to: self.cacheURL(key))
             }
             self.apply(cached)
@@ -111,6 +115,6 @@ final class LyricsController {
     private func cacheURL(_ key: String) -> URL {
         let digest = SHA256.hash(data: Data(key.utf8))
         let name = digest.map { String(format: "%02x", $0) }.joined()
-        return cacheDir.appendingPathComponent("\(name)-v2.json")
+        return cacheDir.appendingPathComponent("\(name)-v3.json")
     }
 }

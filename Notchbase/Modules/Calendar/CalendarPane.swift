@@ -23,9 +23,9 @@ struct CalendarPane: View {
             }
         } else if store.draft != nil {
             EventEditor(store: store)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 10)
                 .padding(.top, 7)
-                .padding(.bottom, 9)
+                .padding(.bottom, 4)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .transition(.opacity)
         } else {
@@ -41,9 +41,9 @@ struct CalendarPane: View {
                 UpcomingList(store: store)
                     .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 10)
             .padding(.top, 7)
-            .padding(.bottom, 9)
+            .padding(.bottom, 4)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .transition(.opacity)
         }
@@ -253,7 +253,7 @@ private struct EventRow: View {
                     .font(Typo.rounded(9, .semibold))
                     .foregroundStyle(Theme.tertiaryText)
                 if entry.isAllDay {
-                    Text("all day")
+                    Text(L.t("all day"))
                         .font(Typo.rounded(9))
                         .foregroundStyle(Theme.tertiaryText)
                 } else {

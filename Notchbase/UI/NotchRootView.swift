@@ -7,8 +7,6 @@ enum NotchCoordinateSpace {
 struct NotchRootView: View {
     var model: NotchViewModel
 
-    @Namespace private var island
-
     private var size: CGSize { model.bodySize }
     private var isOpen: Bool { model.state == .expanded }
     private var topRadius: CGFloat { Layout.topRadius(for: model.state) }
@@ -30,6 +28,7 @@ struct NotchRootView: View {
         .frame(width: Layout.containerSize.width, height: Layout.containerSize.height, alignment: .top)
         .coordinateSpace(.named(NotchCoordinateSpace.root))
         .animation(stateAnimation, value: model.state)
+        .animation(stateAnimation, value: model.activityWidth)
         .animation(Motion.content, value: model.tab)
     }
 
@@ -67,6 +66,20 @@ struct NotchRootView: View {
             Theme.innerHighlight.opacity(isOpen ? 1 : 0)
             content
         }
+        .overlayPreferenceValue(ArtworkSlotKey.self) { anchor in
+            GeometryReader { proxy in
+                if let anchor, model.activity == .media {
+                    let rect = proxy[anchor]
+                    ArtworkView(image: model.media.artwork,
+                                size: rect.width,
+                                ring: (model.media.artworkTint ?? Theme.accent)
+                                    .opacity(model.state == .activity ? 0.5 : 0))
+                        .position(x: rect.midX, y: rect.midY)
+                        .transition(.opacity.combined(with: .scale(scale: 0.6)))
+                }
+            }
+            .allowsHitTesting(false)
+        }
         .frame(width: max(size.width + 2 * topRadius, model.metrics.notchSize.width),
                height: max(size.height, model.metrics.notchSize.height))
         .clipShape(outline)
@@ -91,7 +104,7 @@ struct NotchRootView: View {
             if isOpen {
                 tabContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.opacity.animation(.linear(duration: 0.09)))
+                    .transition(.island)
             }
         }
         .padding(.horizontal, topRadius)
@@ -112,7 +125,7 @@ struct NotchRootView: View {
     private func headerSide(alignment: Alignment) -> some View {
         ZStack(alignment: alignment) {
             if model.state == .activity {
-                ActivityStripView(model: model, alignment: alignment, island: island)
+                ActivityStripView(model: model, alignment: alignment)
                     .transition(.opacity.animation(.linear(duration: 0.07)))
             }
             if isOpen {
@@ -129,9 +142,10 @@ struct NotchRootView: View {
         switch model.tab {
         case .tray: TrayView(model: model)
         case .clipboard: ClipboardView(store: model.clipboard) { model.onClose?() }
-        case .media: MediaView(model: model, island: island)
+        case .media: MediaView(model: model)
         case .terminal: TerminalPane()
         case .agents: AgentsView(monitor: model.agents) { model.onOpenProject?($0) }
+        case .timer: ClockPane(store: model.clock)
         case .calendar:
             CalendarPane(store: model.calendar)
                 .onAppear { model.calendar.focusToday() }

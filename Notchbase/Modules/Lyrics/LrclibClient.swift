@@ -9,21 +9,24 @@ struct LrclibClient {
         var plainLyrics: String?
         var syncedLyrics: String?
         var instrumental: Bool?
-
-        var hasSynced: Bool { syncedLyrics?.isEmpty == false }
     }
 
     private let session = URLSession(configuration: .ephemeral)
     private let userAgent = "Notchbase/0.1.0 (personal build)"
 
-    func lyrics(for playing: NowPlaying) async -> Response? {
-        let exact = await get(playing)
-        if exact?.hasSynced == true { return exact }
-
-        let searched = await search(playing)
-        if searched?.hasSynced == true { return searched }
-
-        return exact ?? searched
+    func candidates(for playing: NowPlaying) async -> [LyricsCandidate] {
+        async let exact = get(playing)
+        async let searched = search(playing)
+        let responses = [await exact].compactMap { $0 } + (await searched)
+        return responses.map { response in
+            LyricsCandidate(source: .lrclib,
+                            title: response.trackName ?? "",
+                            artists: [response.artistName ?? ""],
+                            duration: response.duration,
+                            synced: response.syncedLyrics,
+                            plain: response.plainLyrics,
+                            instrumental: response.instrumental ?? false)
+        }
     }
 
     private func get(_ playing: NowPlaying) async -> Response? {
@@ -37,21 +40,13 @@ struct LrclibClient {
         return await fetch(components.url, as: Response.self)
     }
 
-    private func search(_ playing: NowPlaying) async -> Response? {
+    private func search(_ playing: NowPlaying) async -> [Response] {
         var components = URLComponents(string: "https://lrclib.net/api/search")!
         components.queryItems = [
             URLQueryItem(name: "track_name", value: playing.title),
             URLQueryItem(name: "artist_name", value: playing.artist),
         ]
-        guard let results = await fetch(components.url, as: [Response].self), !results.isEmpty else {
-            return nil
-        }
-        let synced = results.filter(\.hasSynced)
-        let pool = synced.isEmpty ? results : synced
-        guard playing.duration > 0 else { return pool.first }
-        return pool.min {
-            abs(($0.duration ?? 0) - playing.duration) < abs(($1.duration ?? 0) - playing.duration)
-        }
+        return await fetch(components.url, as: [Response].self) ?? []
     }
 
     private func fetch<T: Decodable>(_ url: URL?, as type: T.Type) async -> T? {

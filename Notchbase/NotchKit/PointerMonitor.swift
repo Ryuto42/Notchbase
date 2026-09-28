@@ -7,12 +7,16 @@ final class PointerMonitor {
     var onClick: ((CGPoint) -> Void)?
 
     private var monitors: [Any] = []
+    private var consumedChangeCount = NSPasteboard(name: .drag).changeCount
     private var rejectedChangeCount = 0
     private var isFileDragging = false
 
     func start() {
         let moved = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { _ in
-            MainActor.assumeIsolated { self.onMove?(NSEvent.mouseLocation) }
+            MainActor.assumeIsolated {
+                if self.isFileDragging, NSEvent.pressedMouseButtons & 1 == 0 { self.endDrag() }
+                self.onMove?(NSEvent.mouseLocation)
+            }
         }
         let dragged = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { _ in
             MainActor.assumeIsolated { self.handleDrag() }
@@ -21,7 +25,10 @@ final class PointerMonitor {
             MainActor.assumeIsolated { self.endDrag() }
         }
         let down = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { _ in
-            MainActor.assumeIsolated { self.onClick?(NSEvent.mouseLocation) }
+            MainActor.assumeIsolated {
+                self.endDrag()
+                self.onClick?(NSEvent.mouseLocation)
+            }
         }
         monitors = [moved, dragged, up, down].compactMap { $0 }
     }
@@ -34,7 +41,8 @@ final class PointerMonitor {
     private func handleDrag() {
         if !isFileDragging {
             let pasteboard = NSPasteboard(name: .drag)
-            guard pasteboard.changeCount != rejectedChangeCount else { return }
+            guard pasteboard.changeCount != consumedChangeCount,
+                  pasteboard.changeCount != rejectedChangeCount else { return }
             let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
             guard pasteboard.canReadObject(forClasses: [NSURL.self], options: options) else {
                 if pasteboard.types?.isEmpty == false {
@@ -48,6 +56,7 @@ final class PointerMonitor {
     }
 
     private func endDrag() {
+        consumedChangeCount = NSPasteboard(name: .drag).changeCount
         guard isFileDragging else { return }
         isFileDragging = false
         onFileDragEnd?()

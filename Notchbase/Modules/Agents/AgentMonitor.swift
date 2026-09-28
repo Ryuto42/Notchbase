@@ -73,6 +73,8 @@ final class AgentMonitor {
                                            tokens: reader.tokens,
                                            directory: reader.directory)
                 session.turnOpen = reader.turnOpen
+                session.backgroundPending = reader.hasBackgroundTasks
+                session.interrupted = reader.interrupted
                 found.append(session)
             }
         }
@@ -86,7 +88,7 @@ final class AgentMonitor {
     private func noteCompletions(in sessions: [AgentSession]) {
         let working = Set(sessions.filter { $0.status == .working }.map(\.id))
         let finished = wasWorking.subtracting(working)
-        if let id = finished.first, let session = sessions.first(where: { $0.id == id }) {
+        if let id = finished.first, let session = sessions.first(where: { $0.id == id }), !session.interrupted {
             lastCompletion = Completion(title: session.title, tool: session.tool, at: Date())
             Debug.log("completion: \(session.title)")
         }

@@ -6,27 +6,30 @@ struct LyricsTickerView: View {
     var onSeek: (Double) -> Void
 
     private static let lineHeight: CGFloat = 19
-    private static let visibleLines: CGFloat = 3.2
 
     @State private var manualOffset: CGFloat?
     @State private var manualUntil = Date.distantPast
+    @State private var height: CGFloat = Self.lineHeight * 3
 
     private var index: Int? { controller.index(at: position) }
 
     var body: some View {
-        Group {
-            switch controller.status {
-            case .synced where !controller.lines.isEmpty:
-                synced
-            case .plainOnly:
-                plain
-            default:
-                status
+        GeometryReader { proxy in
+            Group {
+                switch controller.status {
+                case .synced where !controller.lines.isEmpty:
+                    synced
+                case .plainOnly:
+                    plain
+                default:
+                    status
+                }
             }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+            .clipped()
+            .onAppear { height = proxy.size.height }
+            .onChange(of: proxy.size.height) { _, value in height = value }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: Self.lineHeight * Self.visibleLines, alignment: .top)
-        .clipped()
     }
 
     // MARK: - Time-synced
@@ -43,7 +46,7 @@ struct LyricsTickerView: View {
     }
 
     private var minOffset: CGFloat {
-        -max(0, CGFloat(controller.lines.count) - Self.visibleLines) * Self.lineHeight
+        -max(0, CGFloat(controller.lines.count) * Self.lineHeight - height)
     }
 
     private func scroll(by delta: CGFloat) {
@@ -56,8 +59,9 @@ struct LyricsTickerView: View {
             ForEach(Array(controller.lines.enumerated()), id: \.offset) { line, entry in
                 let distance = line - anchor
                 Text(entry.text.isEmpty ? "♪" : entry.text)
-                    .font(.system(size: 13.5, weight: distance == 0 ? .semibold : .regular))
-                    .foregroundStyle(Theme.primaryText.opacity(opacity(for: distance)))
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(Theme.primaryText)
+                    .opacity(opacity(for: distance))
                     .scaleEffect(distance == 0 ? 1.08 : 0.96, anchor: .leading)
                     .lineLimit(1)
                     .frame(height: Self.lineHeight, alignment: .leading)
@@ -73,7 +77,7 @@ struct LyricsTickerView: View {
         }
         .offset(y: offset)
         .animation(Motion.lyric, value: offset)
-        .frame(height: Self.lineHeight * Self.visibleLines, alignment: .top)
+        .frame(height: height, alignment: .top)
         .contentShape(Rectangle())
         .overlay { ScrollWheelCatcher { scroll(by: $0) } }
         .gesture(

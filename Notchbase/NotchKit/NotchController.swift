@@ -50,6 +50,11 @@ final class NotchController {
             self?.model.lyrics.update(for: playing)
         }
         model.media.start()
+        model.clock.onFinish = { [weak self] in
+            guard let self else { return }
+            self.model.clock.mode = .timer
+            self.apply(.expanded, tab: .timer)
+        }
         Debug.log("pointer")
 
         pointer.onFileDragMove = { [weak self] in self?.handleFileDrag($0) }
@@ -133,8 +138,7 @@ final class NotchController {
             let script = "tell application \"Terminal\"\nactivate\ndo script \"\(appleScriptQuoted(command))\"\nend tell"
             AppleScriptRunner.shared.execute(script)
         case .builtIn:
-            model.tab = .terminal
-            apply(.expanded)
+            apply(.expanded, tab: .terminal)
             panel?.keyEligible = true
             panel?.makeKeyAndOrderFront(nil)
             NSApp.activate()
@@ -179,9 +183,10 @@ final class NotchController {
 
     // MARK: - State
 
-    func apply(_ state: NotchState) {
+    func apply(_ state: NotchState, tab requested: NotchTab? = nil) {
         if let forcedState, state != forcedState { return }
         guard model.state != state else {
+            if let requested { model.tab = requested }
             syncHitArea()
             return
         }
@@ -195,12 +200,14 @@ final class NotchController {
             }
         } else if !model.isVisible {
             model.isVisible = true
-            DispatchQueue.main.async { [weak self] in self?.apply(state) }
+            DispatchQueue.main.async { [weak self] in self?.apply(state, tab: requested) }
             return
         }
         Debug.log("\(model.state) -> \(state) tab=\(model.tab) key=\(panel?.isKeyWindow == true) ignoreMouse=\(panel?.ignoresMouseEvents == true)")
         if state == .expanded, model.state != .expanded, !isDebugPinned {
-            if !isFileDragging, Date().timeIntervalSince(collapsedAt) > Preferences.shared.resumeSeconds {
+            if let requested {
+                model.tab = requested
+            } else if !isFileDragging, Date().timeIntervalSince(collapsedAt) > Preferences.shared.resumeSeconds {
                 let wanted = Preferences.shared.defaultTab
                 model.tab = Preferences.shared.isVisible(wanted)
                     ? wanted
@@ -248,7 +255,7 @@ final class NotchController {
     }
 
     private var isHoldingOpen: Bool {
-        model.calendar.draft != nil
+        model.calendar.draft != nil || model.clock.alerting
     }
 
     private var idleState: NotchState {
@@ -297,7 +304,7 @@ final class NotchController {
     // MARK: - Geometry
 
     private func bodyRectInScreen(for state: NotchState) -> CGRect {
-        let body = Layout.interactiveSize(for: state, metrics: metrics, tab: model.tab)
+        let body = Layout.interactiveSize(for: state, metrics: metrics, tab: model.tab, activityWidth: model.activityWidth)
         let width = body.width + 2 * Layout.topRadius(for: state)
         return CGRect(x: metrics.notchCenterX - width / 2,
                       y: metrics.screenFrame.maxY - body.height,
@@ -306,7 +313,7 @@ final class NotchController {
     }
 
     private func bodyRectInPanel(for state: NotchState) -> CGRect {
-        let body = Layout.interactiveSize(for: state, metrics: metrics, tab: model.tab)
+        let body = Layout.interactiveSize(for: state, metrics: metrics, tab: model.tab, activityWidth: model.activityWidth)
         let width = body.width + 2 * Layout.topRadius(for: state)
         return CGRect(x: (Layout.containerSize.width - width) / 2,
                       y: Layout.containerSize.height - body.height,
@@ -322,7 +329,7 @@ final class NotchController {
 
     private var hoverZone: CGRect {
         let collapsed: NotchState = model.state == .activity ? .activity : .closed
-        let body = Layout.bodySize(for: collapsed, metrics: metrics, tab: model.tab)
+        let body = Layout.bodySize(for: collapsed, metrics: metrics, tab: model.tab, activityWidth: model.activityWidth)
         return CGRect(x: metrics.notchCenterX - body.width / 2 - Layout.hoverSideSlop,
                       y: metrics.screenFrame.maxY - body.height - Layout.hoverSlop,
                       width: body.width + 2 * Layout.hoverSideSlop,
@@ -358,7 +365,7 @@ final class NotchController {
                 schedule(idleState, after: .milliseconds(200))
             }
         case .closed, .activity:
-            if isInHoverZone(point) {
+            if isInHoverZone(point), NSEvent.pressedMouseButtons & 1 == 0 {
                 schedule(.expanded, after: .milliseconds(max(0, Preferences.shared.hoverDelayMs)))
             } else {
                 cancelTransition()
@@ -404,8 +411,8 @@ final class NotchController {
 
     private var dropTriggerZone: CGRect {
         let notch = metrics.notchSize
-        let width = notch.width + 150
-        let height: CGFloat = 64
+        let width = notch.width + 280
+        let height: CGFloat = 100
         return CGRect(x: metrics.notchCenterX - width / 2,
                       y: metrics.screenFrame.maxY - height,
                       width: width,
@@ -426,8 +433,7 @@ final class NotchController {
         if dropTriggerZone.contains(point) || overPanel {
             cancelTransition()
             guard Preferences.shared.isVisible(.tray) else { return }
-            apply(.expanded)
-            if model.tab != .tray { model.tab = .tray }
+            if model.state != .expanded || model.tab != .tray { apply(.expanded, tab: .tray) }
         } else if model.state == .expanded {
             schedule(idleState, after: .milliseconds(180))
         }
@@ -444,7 +450,7 @@ final class NotchController {
         guard model.state != .closed else { return }
         if bodyRectInScreen(for: model.state).contains(point) {
             if model.state == .expanded,
-               model.tab == .terminal || model.tab == .clipboard || model.tab == .calendar {
+               model.tab == .terminal || model.tab == .clipboard || model.tab == .calendar || model.tab == .timer {
                 panel?.keyEligible = true
                 panel?.makeKeyAndOrderFront(nil)
                 NSApp.activate()

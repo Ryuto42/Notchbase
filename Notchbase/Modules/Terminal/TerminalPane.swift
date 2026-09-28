@@ -12,8 +12,8 @@ struct TerminalPane: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .strokeBorder(Theme.stroke, lineWidth: 0.5)
             }
-            .padding(.horizontal, 11)
+            .padding(.horizontal, 10)
             .padding(.top, 3)
-            .padding(.bottom, 11)
+            .padding(.bottom, 4)
     }
 }

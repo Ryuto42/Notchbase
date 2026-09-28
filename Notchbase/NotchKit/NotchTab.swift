@@ -1,5 +1,5 @@
 enum NotchTab: String, CaseIterable, Identifiable, Codable {
-    case tray, clipboard, media, terminal, agents, calendar
+    case tray, clipboard, media, terminal, agents, calendar, timer
 
     var id: String { rawValue }
 
@@ -11,6 +11,7 @@ enum NotchTab: String, CaseIterable, Identifiable, Codable {
         case .terminal: "apple.terminal"
         case .agents: "sparkles"
         case .calendar: "calendar"
+        case .timer: "timer"
         }
     }
 
@@ -22,6 +23,7 @@ enum NotchTab: String, CaseIterable, Identifiable, Codable {
         case .terminal: L.t("Terminal")
         case .agents: L.t("Agents")
         case .calendar: L.t("Calendar")
+        case .timer: L.t("Timer")
         }
     }
 }

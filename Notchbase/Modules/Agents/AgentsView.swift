@@ -17,12 +17,12 @@ struct AgentsView: View {
                             AgentRow(session: session, open: { openProject(session) })
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
                 }
             }
         }
-        .padding(.bottom, 6)
+        .padding(.bottom, 4)
     }
 }
 
@@ -87,7 +87,7 @@ private struct AgentRow: View {
         .help(session.directory ?? session.title)
         .contextMenu {
             if let directory = session.directory {
-                Button("Resume in \(session.tool.rawValue)", action: open)
+                Button(L.fill("Resume in %@", session.tool.rawValue), action: open)
                 Button(L.t("Open in Finder")) {
                     NSWorkspace.shared.open(URL(fileURLWithPath: directory))
                 }

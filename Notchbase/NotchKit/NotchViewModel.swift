@@ -22,6 +22,7 @@ final class NotchViewModel {
     @ObservationIgnored let battery = BatteryMonitor()
     @ObservationIgnored let agents = AgentMonitor()
     @ObservationIgnored let calendar = CalendarStore()
+    @ObservationIgnored let clock = ClockStore()
 
     var tabFrames: [NotchTab: CGRect] = [:]
     var hoveredTab: NotchTab?
@@ -35,7 +36,12 @@ final class NotchViewModel {
     }
 
     var bodySize: CGSize {
-        Layout.bodySize(for: state, metrics: metrics, tab: tab)
+        Layout.bodySize(for: state, metrics: metrics, tab: tab, activityWidth: activityWidth)
+    }
+
+    var activityWidth: CGFloat {
+        guard activity == .clock else { return Layout.activityExtraWidth }
+        return Layout.clockActivityExtraWidth(hourDigits: clock.hourDigits)
     }
 
     func sideWidth(for size: CGSize) -> CGFloat {
@@ -45,20 +51,23 @@ final class NotchViewModel {
     // MARK: - Activity
 
     enum Activity: Equatable, Hashable {
-        case agents, media
+        case agents, clock, media
     }
 
     var activity: Activity? {
         guard Preferences.shared.showActivityStrip else { return nil }
         let announced = agents.recentCompletion(within: Preferences.shared.announceSeconds) != nil
         let playing = media.current?.isPlaying == true
+        let timing = clock.timerActive || clock.stopwatchActive || clock.alerting
 
         switch Preferences.shared.activityPriority {
         case .agents:
             if announced { return .agents }
+            if timing { return .clock }
             return playing ? .media : nil
         case .media:
             if playing { return .media }
+            if timing { return .clock }
             return announced ? .agents : nil
         }
     }

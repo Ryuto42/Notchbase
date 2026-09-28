@@ -235,8 +235,6 @@ final class MediaCoordinator {
         anchor(chosen.position)
 
         if isNewTrack {
-            artwork = nil
-            artworkTint = nil
             loadArtwork(for: chosen)
             loadQueue(for: chosen)
             onTrackChange?(chosen)

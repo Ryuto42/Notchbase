@@ -202,7 +202,8 @@ final class Preferences {
 
     private func load() {
         defaultTab = NotchTab(rawValue: defaults.string(forKey: Key.defaultTab) ?? "") ?? .media
-        tabOrder = (defaults.stringArray(forKey: Key.tabOrder) ?? []).compactMap(NotchTab.init(rawValue:))
+        let savedOrder = (defaults.stringArray(forKey: Key.tabOrder) ?? []).compactMap(NotchTab.init(rawValue:))
+        tabOrder = savedOrder + NotchTab.allCases.filter { !savedOrder.contains($0) }
         hiddenTabs = Set((defaults.stringArray(forKey: Key.hiddenTabs) ?? []).compactMap(NotchTab.init(rawValue:)))
         language = Language(rawValue: defaults.string(forKey: Key.language) ?? "") ?? .system
         resumeSeconds = defaults.double(forKey: Key.resumeSeconds)
