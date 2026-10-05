@@ -51,16 +51,4 @@ extension View {
             .allowsHitTesting(false)
         }
     }
-
-    func cardRim<S: InsettableShape>(_ shape: S, strength: Double = 1) -> some View {
-        overlay {
-            shape
-                .strokeBorder(LinearGradient(stops: [
-                    .init(color: .white.opacity(0.20 * strength), location: 0),
-                    .init(color: .white.opacity(0.06 * strength), location: 0.5),
-                    .init(color: .white.opacity(0.11 * strength), location: 1),
-                ], startPoint: .top, endPoint: .bottom), lineWidth: 0.6)
-                .allowsHitTesting(false)
-        }
-    }
 }

@@ -52,11 +52,6 @@ enum Typo {
 
 extension View {
     func cardBackground(hovering: Bool = false, radius: CGFloat = 10) -> some View {
-        background {
-            RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .fill(hovering ? Theme.cardHover : Theme.card)
-        }
-        .cardRim(RoundedRectangle(cornerRadius: radius, style: .continuous),
-                 strength: hovering ? 1.35 : 1)
+        liquidGlass(LiquidGlass(.dark, radius: radius, hovering: hovering))
     }
 }

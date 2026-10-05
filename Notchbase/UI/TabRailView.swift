@@ -7,6 +7,7 @@ struct TabRailView: View {
 
     private var tabs: [NotchTab] { Preferences.shared.visibleTabs }
     private var fade: Double { Preferences.shared.tabRailOpacity }
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         content
@@ -42,18 +43,15 @@ struct TabRailView: View {
     }
 
     private var bar: some View {
-        Capsule()
-            .fill(.ultraThinMaterial)
+        BackdropView()
+            .overlay { Color.black.opacity(colorScheme == .dark ? 0.18 : 0.06) }
+            .clipShape(Capsule())
             .overlay {
-                Capsule()
-                    .fill(Color.black.opacity(0.26))
-                    .overlay {
-                        Capsule().fill(LinearGradient(
-                            colors: [Color.white.opacity(0.08), .clear],
-                            startPoint: .top, endPoint: .center))
-                    }
+                Rectangle()
+                    .fill(LiquidGlass(LiquidGlass.Variant(colorScheme),
+                                      radius: Layout.tabRailHeight / 2, bevel: 12).shader)
+                    .allowsHitTesting(false)
             }
-            .cardRim(Capsule(), strength: 0.9)
             .opacity(fade)
     }
 }
@@ -105,6 +103,7 @@ private struct Lens: ViewModifier {
     var glass: Namespace.ID
 
     private var fade: Double { Preferences.shared.tabRailOpacity }
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *), isSelected {
@@ -115,9 +114,9 @@ private struct Lens: ViewModifier {
         } else {
             content.background {
                 if isSelected {
-                    Capsule()
-                        .fill(Color.white.opacity(0.10 * fade))
-                        .cardRim(Capsule(), strength: 1.5 * fade)
+                    Color.clear
+                        .liquidGlass(LiquidGlass(LiquidGlass.Variant(colorScheme), radius: 999, hovering: true))
+                        .opacity(fade)
                 } else if isHovered {
                     Capsule().fill(Color.white.opacity(0.06 * fade))
                 }

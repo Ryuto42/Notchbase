@@ -7,6 +7,8 @@ enum NotchCoordinateSpace {
 struct NotchRootView: View {
     var model: NotchViewModel
 
+    @Environment(\.colorScheme) private var colorScheme
+
     private var size: CGSize { model.bodySize }
     private var isOpen: Bool { model.state == .expanded }
     private var topRadius: CGFloat { Layout.topRadius(for: model.state) }
@@ -52,16 +54,22 @@ struct NotchRootView: View {
                 }
                 .compositingGroup()
 
-            GlassPane()
+            ZStack {
+                BackdropView()
+                    .saturation(1.6)
+                Rectangle()
+                    .fill(LiquidGlass(LiquidGlass.Variant(colorScheme),
+                                      radius: Layout.bottomRadius(for: model.state), bevel: 16, rim: 0.6).shader)
+                    .padding(.horizontal, topRadius)
+            }
+            .mask(alignment: .bottom) {
+                LinearGradient(stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.85), location: 1),
+                ], startPoint: .top, endPoint: .bottom)
                 .frame(height: fadeHeight)
-                .mask(
-                    LinearGradient(stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .black.opacity(0.85), location: 1),
-                    ], startPoint: .top, endPoint: .bottom)
-                )
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .allowsHitTesting(false)
+            }
+            .allowsHitTesting(false)
 
             Theme.innerHighlight.opacity(isOpen ? 1 : 0)
             content

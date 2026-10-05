@@ -58,11 +58,14 @@ struct AgentSession: Identifiable, Hashable {
 
     var turnOpen = false
     var backgroundPending = false
+    var subagentsWorking = false
     var interrupted = false
+
+    static let workingWindow: TimeInterval = 900
 
     var status: Status {
         let age = Date().timeIntervalSince(lastActivity)
-        if turnOpen && age < 900 { return .working }
+        if (turnOpen || subagentsWorking) && age < Self.workingWindow { return .working }
         if backgroundPending && age < 3600 { return .working }
         if age < 1800 { return .waiting }
         return .finished

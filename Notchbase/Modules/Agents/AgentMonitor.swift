@@ -57,22 +57,40 @@ final class AgentMonitor {
         let days = Double(max(1, Preferences.shared.agentHistoryDays))
         let cutoff = Date().addingTimeInterval(-60 * 60 * 24 * days)
         var found: [AgentSession] = []
+        var live: Set<String> = []
+        var subagents: [String: (modified: Date, working: Bool)] = [:]
+
+        for url in transcripts(in: claudeRoot, modifiedAfter: cutoff) where Self.isSubagent(url) {
+            guard let modified = modificationDate(of: url) else { continue }
+            let reader = readers[url] ?? TranscriptReader(url: url, tool: .claude)
+            readers[url] = reader
+            reader.refresh()
+            live.insert(url.path)
+            let parent = url.deletingLastPathComponent().deletingLastPathComponent().path + ".jsonl"
+            let working = (reader.turnOpen || reader.hasBackgroundTasks)
+                && Date().timeIntervalSince(modified) < AgentSession.workingWindow
+            let previous = subagents[parent]
+            subagents[parent] = (max(previous?.modified ?? modified, modified), (previous?.working ?? false) || working)
+        }
 
         for (root, tool) in [(claudeRoot, AgentSession.Tool.claude), (codexRoot, .codex)] {
-            for url in transcripts(in: root, modifiedAfter: cutoff) {
+            for url in transcripts(in: root, modifiedAfter: cutoff) where !Self.isSubagent(url) {
                 guard let modified = modificationDate(of: url) else { continue }
 
                 let reader = readers[url] ?? TranscriptReader(url: url, tool: tool)
                 readers[url] = reader
                 reader.refresh()
+                live.insert(url.path)
 
+                let children = subagents[url.path]
                 var session = AgentSession(id: url.path,
                                            tool: tool,
                                            title: title(for: url, tool: tool, reader: reader),
-                                           lastActivity: modified,
+                                           lastActivity: max(modified, children?.modified ?? modified),
                                            tokens: reader.tokens,
                                            directory: reader.directory)
                 session.turnOpen = reader.turnOpen
+                session.subagentsWorking = children?.working ?? false
                 session.backgroundPending = reader.hasBackgroundTasks
                 session.interrupted = reader.interrupted
                 found.append(session)
@@ -81,8 +99,11 @@ final class AgentMonitor {
 
         sessions = found.sorted { $0.lastActivity > $1.lastActivity }
         noteCompletions(in: sessions)
-        let live = Set(found.map(\.id))
         readers = readers.filter { live.contains($0.key.path) }
+    }
+
+    private static func isSubagent(_ url: URL) -> Bool {
+        url.deletingLastPathComponent().lastPathComponent == "subagents"
     }
 
     private func noteCompletions(in sessions: [AgentSession]) {

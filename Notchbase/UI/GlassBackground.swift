@@ -38,13 +38,3 @@ extension View {
         modifier(GlassBackground(shape: shape, isClear: clear))
     }
 }
-
-struct GlassPane: View {
-    var body: some View {
-        if #available(macOS 26.0, *) {
-            Color.clear.glassEffect(.clear, in: Rectangle())
-        } else {
-            BackdropView().saturation(1.6)
-        }
-    }
-}
