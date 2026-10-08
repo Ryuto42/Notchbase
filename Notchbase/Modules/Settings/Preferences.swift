@@ -120,6 +120,16 @@ final class Preferences {
     var showAirDropZone: Bool = true { didSet { store(showAirDropZone, Key.airDrop) } }
     var clipboardEnabled: Bool = true { didSet { store(clipboardEnabled, Key.clipEnabled) } }
     var clipboardLimit: Int = 200 { didSet { store(clipboardLimit, Key.clipLimit) } }
+    var clipboardExcludedApps: [String] = [] { didSet { store(clipboardExcludedApps, Key.clipExcluded) } }
+
+    static let passwordManagers = [
+        "com.1password.1password",
+        "com.agilebits.onepassword7",
+        "com.bitwarden.desktop",
+        "com.apple.keychainaccess",
+        "com.apple.Passwords",
+        "org.keepassxc.keepassxc",
+    ]
     var lyricsEnabled: Bool = true { didSet { store(lyricsEnabled, Key.lyricsEnabled) } }
     var lyricsOffset: Double = 0 { didSet { store(lyricsOffset, Key.lyricsOffset) } }
     var queueLimit: Int = 8 { didSet { store(queueLimit, Key.queueLimit) } }
@@ -185,6 +195,7 @@ final class Preferences {
         Key.airDrop: true,
         Key.clipEnabled: true,
         Key.clipLimit: 200,
+        Key.clipExcluded: passwordManagers,
         Key.lyricsEnabled: true,
         Key.lyricsOffset: 0.0,
         Key.queueLimit: 8,
@@ -223,6 +234,7 @@ final class Preferences {
         showAirDropZone = defaults.bool(forKey: Key.airDrop)
         clipboardEnabled = defaults.bool(forKey: Key.clipEnabled)
         clipboardLimit = defaults.integer(forKey: Key.clipLimit)
+        clipboardExcludedApps = defaults.stringArray(forKey: Key.clipExcluded) ?? Self.passwordManagers
         lyricsEnabled = defaults.bool(forKey: Key.lyricsEnabled)
         lyricsOffset = defaults.double(forKey: Key.lyricsOffset)
         queueLimit = defaults.integer(forKey: Key.queueLimit)
@@ -263,6 +275,7 @@ final class Preferences {
         static let airDrop = "showAirDropZone"
         static let clipEnabled = "clipboardEnabled"
         static let clipLimit = "clipboardLimit"
+        static let clipExcluded = "clipboardExcludedApps"
         static let lyricsEnabled = "lyricsEnabled"
         static let lyricsOffset = "lyricsOffset"
         static let queueLimit = "queueLimit"

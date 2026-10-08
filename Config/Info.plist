@@ -32,6 +32,8 @@
 	<string>https://raw.githubusercontent.com/Ryuto42/Notchbase/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>odmQVFgLp6Ihu8S+ul1vzSQX6K5zbEOxHJd5XMmIffg=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUScheduledCheckInterval</key>

@@ -12,7 +12,12 @@ DerivedData/
 *.xcuserdatad
 xcuserdata/
 *.xcworkspace/xcuserdata/
-Notchbase.xcodeproj/project.xcworkspace/
+Notchbase.xcodeproj/project.xcworkspace/*
+!Notchbase.xcodeproj/project.xcworkspace/xcshareddata/
+Notchbase.xcodeproj/project.xcworkspace/xcshareddata/*
+!Notchbase.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+Notchbase.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+!Notchbase.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 Notchbase.xcodeproj/xcuserdata/
 *.moved-aside
 *.hmap

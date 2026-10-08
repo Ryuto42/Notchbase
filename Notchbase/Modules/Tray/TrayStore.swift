@@ -27,17 +27,17 @@ final class TrayStore {
     }
 
     func remove(_ item: TrayItem) {
-        if item.isCopy, let stored = item.storedName {
-            try? FileManager.default.removeItem(at: filesDir.appendingPathComponent(stored))
+        if let stored = storedURL(for: item) {
+            try? FileManager.default.removeItem(at: stored)
         }
         items.removeAll { $0.id == item.id }
         persist()
     }
 
     func clear() {
-        for item in items where item.isCopy {
-            guard let stored = item.storedName else { continue }
-            try? FileManager.default.removeItem(at: filesDir.appendingPathComponent(stored))
+        for item in items {
+            guard let stored = storedURL(for: item) else { continue }
+            try? FileManager.default.removeItem(at: stored)
         }
         items.removeAll()
         persist()
@@ -46,8 +46,8 @@ final class TrayStore {
     // MARK: - Access
 
     func url(for item: TrayItem) -> URL? {
-        if item.isCopy, let stored = item.storedName {
-            let url = filesDir.appendingPathComponent(stored)
+        if item.isCopy, item.storedName != nil {
+            guard let url = storedURL(for: item) else { return nil }
             return FileManager.default.fileExists(atPath: url.path) ? url : nil
         }
         guard let bookmark = item.bookmark else { return nil }
@@ -70,6 +70,15 @@ final class TrayStore {
     }
 
     // MARK: - Internals
+
+    /// tray.json can be edited on disk, so a stored name must stay a single entry inside the Tray folder.
+    private func storedURL(for item: TrayItem) -> URL? {
+        guard item.isCopy, let stored = item.storedName,
+              !stored.isEmpty, stored != ".", stored != "..",
+              !stored.contains("/"), !stored.contains("\0"),
+              (stored as NSString).lastPathComponent == stored else { return nil }
+        return filesDir.appendingPathComponent(stored)
+    }
 
     private func makeItem(from url: URL, copy: Bool) -> TrayItem? {
         let fm = FileManager.default

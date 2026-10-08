@@ -33,6 +33,7 @@ Scripts/package.sh
 zip="dist/Notchbase-$version.zip"
 [ -f "$zip" ] || { echo "package.sh produced no $zip"; exit 1; }
 grep -q "sparkle:edSignature" appcast.xml || { echo "appcast.xml is unsigned"; exit 1; }
+grep -q "sparkle-signatures:" appcast.xml || { echo "appcast.xml feed signature is missing"; exit 1; }
 grep -q "$tag/Notchbase-$version.zip" appcast.xml || { echo "appcast.xml does not point at $tag"; exit 1; }
 
 git add Notchbase.xcodeproj/project.pbxproj appcast.xml
@@ -41,10 +42,16 @@ git tag "$tag"
 git push -q origin main
 git push -q origin "$tag"
 
+sha=$(shasum -a 256 "$zip" | awk '{print $1}')
+checksum="SHA-256 of \`Notchbase-$version.zip\`: \`$sha\`"
+echo "$checksum"
+
 if [ -n "$notes" ]; then
-    gh release create "$tag" "$zip" --repo "$repo" --title "$version" --notes "$notes"
+    gh release create "$tag" "$zip" --repo "$repo" --title "$version" --notes "$notes
+
+$checksum"
 else
-    gh release create "$tag" "$zip" --repo "$repo" --title "$version" --generate-notes
+    gh release create "$tag" "$zip" --repo "$repo" --title "$version" --notes "$checksum" --generate-notes
 fi
 
 echo

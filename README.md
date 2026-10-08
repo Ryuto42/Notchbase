@@ -30,8 +30,15 @@ bare hardware notch.
 
 ## Install
 
-Download the latest `Notchbase-<version>.zip` from [Releases](../../releases), unzip, and
-move `Notchbase.app` to `/Applications`.
+Download the latest `Notchbase-<version>.zip` from [Releases](../../releases). Before
+unzipping, check that its SHA-256 matches the one printed in the release notes:
+
+```sh
+shasum -a 256 ~/Downloads/Notchbase-<version>.zip
+```
+
+If the two differ, delete the download and do not open it. Otherwise unzip and move
+`Notchbase.app` to `/Applications`.
 
 The app is not notarised, so macOS blocks the first launch with *"Notchbase" cannot be
 opened*. Dismiss it, then open **System Settings › Privacy & Security**, scroll to Security

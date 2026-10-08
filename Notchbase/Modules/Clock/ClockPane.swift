@@ -450,23 +450,26 @@ private struct LapRow: View {
     var total: TimeInterval
 
     var body: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 7) {
             Text(L.count("Lap %@", number))
                 .font(Typo.rounded(10, .semibold))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize()
-                .frame(minWidth: 44, alignment: .leading)
+                .frame(minWidth: 38, alignment: .leading)
             Capsule()
                 .fill(Theme.accent)
-                .frame(width: 2.5, height: 18)
+                .frame(width: 2.5, height: 14)
             Text(ClockFormat.elapsed(split))
                 .font(Typo.digits(11.5, .medium))
                 .foregroundStyle(Theme.primaryText)
-            Spacer(minLength: 0)
+                .fixedSize()
+            Spacer(minLength: 6)
             Text(ClockFormat.elapsed(total))
                 .font(Typo.digits(10))
                 .foregroundStyle(Theme.secondaryText)
+                .fixedSize()
         }
+        .lineLimit(1)
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
         .cardBackground(radius: 9)

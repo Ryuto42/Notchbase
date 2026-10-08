@@ -116,7 +116,9 @@ final class NotchController {
     }
 
     private func openProject(_ session: AgentSession) {
-        guard let directory = session.directory else { return }
+        // The directory ends up in a shell command and an AppleScript string; control characters could break out of either.
+        guard let directory = session.directory,
+              !directory.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F }) else { return }
         let command = "cd \(shellQuoted(directory)) && \(session.tool.command)"
 
         let target = Preferences.shared.sessionTarget
