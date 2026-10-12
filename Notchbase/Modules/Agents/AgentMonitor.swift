@@ -19,6 +19,7 @@ final class AgentMonitor {
     @ObservationIgnored private var readers: [URL: TranscriptReader] = [:]
     @ObservationIgnored private var codexTitles: [String: String] = [:]
     @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var stream: FSEventStreamRef?
 
     private let claudeRoot = URL(fileURLWithPath: NSHomeDirectory())
         .appendingPathComponent(".claude/projects")
@@ -38,9 +39,11 @@ final class AgentMonitor {
     func start() {
         loadCodexTitles()
         scan()
-        let timer = Timer(timeInterval: 2, repeats: true) { _ in
+        watch()
+        let timer = Timer(timeInterval: 30, repeats: true) { _ in
             MainActor.assumeIsolated { self.scan() }
         }
+        timer.tolerance = 5
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
@@ -48,6 +51,27 @@ final class AgentMonitor {
     func stop() {
         timer?.invalidate()
         timer = nil
+        guard let stream else { return }
+        FSEventStreamStop(stream)
+        FSEventStreamInvalidate(stream)
+        FSEventStreamRelease(stream)
+        self.stream = nil
+    }
+
+    private func watch() {
+        var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
+                                           retain: nil, release: nil, copyDescription: nil)
+        let paths = [claudeRoot.path, codexRoot.path] as CFArray
+        guard let stream = FSEventStreamCreate(nil, { _, info, _, _, _, _ in
+            guard let info else { return }
+            MainActor.assumeIsolated {
+                Unmanaged<AgentMonitor>.fromOpaque(info).takeUnretainedValue().scan()
+            }
+        }, &context, paths, FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 1,
+           FSEventStreamCreateFlags(kFSEventStreamCreateFlagNoDefer)) else { return }
+        FSEventStreamSetDispatchQueue(stream, .main)
+        FSEventStreamStart(stream)
+        self.stream = stream
     }
 
     // MARK: - Scanning
@@ -97,7 +121,8 @@ final class AgentMonitor {
             }
         }
 
-        sessions = found.sorted { $0.lastActivity > $1.lastActivity }
+        let sorted = found.sorted { $0.lastActivity > $1.lastActivity }
+        if sorted != sessions { sessions = sorted }
         noteCompletions(in: sessions)
         readers = readers.filter { live.contains($0.key.path) }
     }

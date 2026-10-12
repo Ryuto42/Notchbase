@@ -11,7 +11,7 @@ final class NotchController {
 
     private var transitionTask: Task<Void, Never>?
     private var hideTask: Task<Void, Never>?
-    private var idleTimer: Timer?
+    private var activityExpiry: Task<Void, Never>?
     private var pendingState: NotchState?
     private var lastPointer = NSEvent.mouseLocation
     private var isFileDragging = false
@@ -60,22 +60,11 @@ final class NotchController {
         pointer.onFileDragMove = { [weak self] in self?.handleFileDrag($0) }
         pointer.onFileDragEnd = { [weak self] in self?.handleFileDragEnd() }
         pointer.onClick = { [weak self] in self?.handleClick($0) }
+        pointer.onMove = { [weak self] in self?.handlePointerMove($0) }
         pointer.start()
 
-        let hover = Timer(timeInterval: 0.03, repeats: true) { _ in
-            MainActor.assumeIsolated { self.pollPointer() }
-        }
-        RunLoop.main.add(hover, forMode: .common)
-        hoverTimer = hover
-        Debug.log("hover timer scheduled isValid=\(hover.isValid)")
-
-        let idle = Timer(timeInterval: 0.5, repeats: true) { _ in
-            MainActor.assumeIsolated { self.refreshIdleState() }
-        }
-        RunLoop.main.add(idle, forMode: .common)
-        idleTimer = idle
-
-        Debug.log("idle timer scheduled")
+        trackActivity()
+        startPolling()
         applyDebugOverride()
         Debug.log("start complete")
 
@@ -90,8 +79,8 @@ final class NotchController {
 
     func stop() {
         pointer.stop()
-        hoverTimer?.invalidate()
-        idleTimer?.invalidate()
+        stopPolling()
+        activityExpiry?.cancel()
         transitionTask?.cancel()
         model.clipboard.stop()
         model.battery.stop()
@@ -176,7 +165,7 @@ final class NotchController {
 
         panel.contentView = container
         panel.setFrame(frame, display: false)
-        panel.orderFrontRegardless()
+        if model.isVisible { panel.orderFrontRegardless() }
 
         self.panel = panel
         self.container = container
@@ -199,9 +188,11 @@ final class NotchController {
                 try? await Task.sleep(for: .seconds(Motion.stateDuration))
                 guard !Task.isCancelled, let self, self.model.state == .closed else { return }
                 self.model.isVisible = false
+                self.panel?.orderOut(nil)
             }
         } else if !model.isVisible {
             model.isVisible = true
+            panel?.orderFrontRegardless()
             DispatchQueue.main.async { [weak self] in self?.apply(state, tab: requested) }
             return
         }
@@ -219,6 +210,8 @@ final class NotchController {
             collapsedAt = Date()
         }
         model.state = state
+        model.media.setLive(state == .expanded)
+        if state == .expanded { startPolling() }
         if state != .expanded {
             model.hoveredTab = nil
             tabCandidate = nil
@@ -267,6 +260,30 @@ final class NotchController {
     private func refreshIdleState() {
         guard model.state == .closed || model.state == .activity else { return }
         apply(idleState)
+    }
+
+    private func trackActivity() {
+        withObservationTracking {
+            _ = (model.activity, model.activityWidth)
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.trackActivity()
+            }
+        }
+        refreshActivity()
+    }
+
+    private func refreshActivity() {
+        refreshIdleState()
+        activityExpiry?.cancel()
+        let window = Preferences.shared.announceSeconds
+        guard let completion = model.agents.recentCompletion(within: window) else { return }
+        let remaining = window - Date().timeIntervalSince(completion.at)
+        activityExpiry = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(0, remaining) + 0.05))
+            guard !Task.isCancelled else { return }
+            self?.refreshActivity()
+        }
     }
 
     func toggleExpanded() {
@@ -340,6 +357,35 @@ final class NotchController {
 
     // MARK: - Pointer handling
 
+    private func startPolling() {
+        guard hoverTimer == nil else { return }
+        let hover = Timer(timeInterval: 0.03, repeats: true) { _ in
+            MainActor.assumeIsolated { self.pollPointer() }
+        }
+        hover.tolerance = 0.005
+        RunLoop.main.add(hover, forMode: .common)
+        hoverTimer = hover
+    }
+
+    private func stopPolling() {
+        hoverTimer?.invalidate()
+        hoverTimer = nil
+    }
+
+    private func handlePointerMove(_ point: CGPoint) {
+        guard hoverTimer == nil, isNearNotch(point) else { return }
+        startPolling()
+        pollPointer()
+    }
+
+    private func isNearNotch(_ point: CGPoint) -> Bool {
+        hoverZone.union(dropTriggerZone).insetBy(dx: -120, dy: -120).contains(point)
+    }
+
+    private var canStopPolling: Bool {
+        model.state != .expanded && !isFileDragging && pendingState == nil && !isDebugPinned
+    }
+
     private func pollPointer() {
         guard !isDebugPinned else { return }
         let point = NSEvent.mouseLocation
@@ -371,6 +417,7 @@ final class NotchController {
                 schedule(.expanded, after: .milliseconds(max(0, Preferences.shared.hoverDelayMs)))
             } else {
                 cancelTransition()
+                if canStopPolling, !isNearNotch(point) { stopPolling() }
             }
         }
     }
@@ -424,6 +471,7 @@ final class NotchController {
     private func handleFileDrag(_ point: CGPoint) {
         lastPointer = point
         isFileDragging = true
+        startPolling()
         updateMouseTransparency()
         evaluateFileDrag(point)
     }

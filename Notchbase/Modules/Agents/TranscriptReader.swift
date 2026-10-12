@@ -36,10 +36,15 @@ final class TranscriptReader {
         guard size > offset else { return }
 
         try? handle.seek(toOffset: offset)
-        guard let data = try? handle.readToEnd(), !data.isEmpty else { return }
+        var pending = Data()
+        while autoreleasepool(invoking: { consumeChunk(from: handle, pending: &pending) }) {}
+    }
 
-        guard let lastNewline = data.lastIndex(of: UInt8(ascii: "\n")) else { return }
-        let consumable = data[data.startIndex...lastNewline]
+    private func consumeChunk(from handle: FileHandle, pending: inout Data) -> Bool {
+        guard let chunk = try? handle.read(upToCount: 1 << 20), !chunk.isEmpty else { return false }
+        pending.append(chunk)
+        guard let lastNewline = pending.lastIndex(of: UInt8(ascii: "\n")) else { return true }
+        let consumable = pending[pending.startIndex...lastNewline]
         offset += UInt64(consumable.count)
 
         for line in consumable.split(separator: UInt8(ascii: "\n")) where !line.isEmpty {
@@ -51,6 +56,8 @@ final class TranscriptReader {
             case .codex: consumeCodex(object)
             }
         }
+        pending = Data(pending[(lastNewline + 1)...])
+        return true
     }
 
     private func consumeClaude(_ object: [String: Any]) {

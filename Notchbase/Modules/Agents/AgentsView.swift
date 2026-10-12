@@ -70,10 +70,12 @@ private struct AgentRow: View {
                         .foregroundStyle(Theme.tertiaryText)
                 }
 
-                Text(Format.relative(session.lastActivity))
-                    .font(Typo.digits(10))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .frame(width: 30, alignment: .trailing)
+                TimelineView(.periodic(from: .now, by: 30)) { _ in
+                    Text(Format.relative(session.lastActivity))
+                        .font(Typo.digits(10))
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(width: 30, alignment: .trailing)
+                }
             }
             .padding(.horizontal, 9)
             .padding(.vertical, 6)

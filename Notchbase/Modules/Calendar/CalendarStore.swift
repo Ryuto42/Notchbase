@@ -45,16 +45,17 @@ final class CalendarStore {
             MainActor.assumeIsolated { self.reload() }
         }
 
-        let timer = Timer(timeInterval: 5, repeats: true) { _ in
+        let timer = Timer(timeInterval: 60, repeats: true) { _ in
             MainActor.assumeIsolated {
                 if self.accessGranted {
                     self.tick += 1
-                    if self.tick % 60 == 0 { self.reload() }
+                    if self.tick % 5 == 0 { self.reload() }
                 } else {
                     self.refreshAuthorization()
                 }
             }
         }
+        timer.tolerance = 10
         RunLoop.main.add(timer, forMode: .common)
         refreshTimer = timer
     }

@@ -27,6 +27,7 @@ final class MediaCoordinator {
     @ObservationIgnored private var lastPlayingSource: NowPlaying.Source?
     @ObservationIgnored private var tick: Timer?
     @ObservationIgnored private var refreshCounter = 0
+    @ObservationIgnored private var isLive = false
 
     var onTrackChange: ((NowPlaying?) -> Void)?
 
@@ -53,18 +54,43 @@ final class MediaCoordinator {
             }
         }
 
-        let timer = Timer(timeInterval: 0.5, repeats: true) { _ in
+        let workspace = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
+            workspace.addObserver(forName: name, object: nil, queue: .main) { note in
+                let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                MainActor.assumeIsolated {
+                    guard self.adapters.contains(where: { $0.bundleID == app?.bundleIdentifier }) else { return }
+                    self.refresh()
+                }
+            }
+        }
+
+        scheduleTick()
+        refresh()
+    }
+
+    func setLive(_ live: Bool) {
+        guard live != isLive else { return }
+        isLive = live
+        scheduleTick()
+        if live { refresh() }
+    }
+
+    private func scheduleTick() {
+        tick?.invalidate()
+        let timer = Timer(timeInterval: isLive ? 0.5 : 15, repeats: true) { _ in
             MainActor.assumeIsolated { self.onTick() }
         }
+        timer.tolerance = isLive ? 0.05 : 5
         RunLoop.main.add(timer, forMode: .common)
         tick = timer
-        refresh()
     }
 
     func stop() {
         tick?.invalidate()
         tick = nil
         DistributedNotificationCenter.default().removeObserver(self)
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
     }
 
     // MARK: - Commands
@@ -152,6 +178,7 @@ final class MediaCoordinator {
     // MARK: - Refresh
 
     private func onTick() {
+        guard isLive else { return refresh() }
         refreshCounter += 1
         if refreshCounter % 4 == 0 {
             refresh()

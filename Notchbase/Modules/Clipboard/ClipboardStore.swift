@@ -48,6 +48,7 @@ final class ClipboardStore {
         let timer = Timer(timeInterval: 0.4, repeats: true) { _ in
             MainActor.assumeIsolated { self.poll() }
         }
+        timer.tolerance = 0.1
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }

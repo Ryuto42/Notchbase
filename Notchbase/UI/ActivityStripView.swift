@@ -126,7 +126,7 @@ struct AudioBarsView: View {
     ]
 
     var body: some View {
-        TimelineView(.animation(paused: !isAnimating)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !isAnimating)) { context in
             let time = context.date.timeIntervalSinceReferenceDate
             HStack(alignment: .center, spacing: 1.8) {
                 ForEach(Array(bars.enumerated()), id: \.offset) { _, bar in

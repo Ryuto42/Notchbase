@@ -19,7 +19,10 @@ final class PointerMonitor {
             }
         }
         let dragged = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { _ in
-            MainActor.assumeIsolated { self.handleDrag() }
+            MainActor.assumeIsolated {
+                self.handleDrag()
+                self.onMove?(NSEvent.mouseLocation)
+            }
         }
         let up = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { _ in
             MainActor.assumeIsolated { self.endDrag() }

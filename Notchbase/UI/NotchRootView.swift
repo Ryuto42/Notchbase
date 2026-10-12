@@ -54,22 +54,25 @@ struct NotchRootView: View {
                 }
                 .compositingGroup()
 
-            ZStack {
-                BackdropView()
-                    .saturation(1.6)
-                Rectangle()
-                    .fill(LiquidGlass(LiquidGlass.Variant(colorScheme),
-                                      radius: Layout.bottomRadius(for: model.state), bevel: 16, rim: 0.6).shader)
-                    .padding(.horizontal, topRadius)
+            if isOpen && fadeHeight > 0 {
+                ZStack {
+                    BackdropView()
+                        .saturation(1.6)
+                    Rectangle()
+                        .fill(LiquidGlass(LiquidGlass.Variant(colorScheme),
+                                          radius: Layout.bottomRadius(for: model.state), bevel: 16, rim: 0.6).shader)
+                        .padding(.horizontal, topRadius)
+                }
+                .mask(alignment: .bottom) {
+                    LinearGradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black.opacity(0.85), location: 1),
+                    ], startPoint: .top, endPoint: .bottom)
+                    .frame(height: fadeHeight)
+                }
+                .allowsHitTesting(false)
+                .transition(.opacity)
             }
-            .mask(alignment: .bottom) {
-                LinearGradient(stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black.opacity(0.85), location: 1),
-                ], startPoint: .top, endPoint: .bottom)
-                .frame(height: fadeHeight)
-            }
-            .allowsHitTesting(false)
 
             Theme.innerHighlight.opacity(isOpen ? 1 : 0)
             content

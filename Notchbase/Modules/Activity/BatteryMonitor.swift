@@ -8,20 +8,25 @@ final class BatteryMonitor {
     private(set) var isCharging = false
     private(set) var minutesRemaining: Int?
 
-    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var source: CFRunLoopSource?
 
     func start() {
         refresh()
-        let timer = Timer(timeInterval: 20, repeats: true) { _ in
-            MainActor.assumeIsolated { self.refresh() }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        guard let source = IOPSNotificationCreateRunLoopSource({ context in
+            guard let context else { return }
+            MainActor.assumeIsolated {
+                Unmanaged<BatteryMonitor>.fromOpaque(context).takeUnretainedValue().refresh()
+            }
+        }, context)?.takeRetainedValue() else { return }
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        self.source = source
     }
 
     func stop() {
-        timer?.invalidate()
-        timer = nil
+        guard let source else { return }
+        CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+        self.source = nil
     }
 
     private func refresh() {
