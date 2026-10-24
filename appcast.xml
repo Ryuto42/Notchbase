@@ -1,8 +1,19 @@
-<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+<?xml version="1.0" standalone="yes"?>
+<!-- sparkle-sign-warning:
 IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
---><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+-->
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>Notchbase</title>
+        <item>
+            <title>0.4.6</title>
+            <pubDate>Sat, 24 Oct 2026 10:11:13 +0900</pubDate>
+            <link>https://github.com/Ryuto42/Notchbase</link>
+            <sparkle:version>15</sparkle:version>
+            <sparkle:shortVersionString>0.4.6</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.4.6/Notchbase-0.4.6.zip" length="6507611" type="application/octet-stream" sparkle:edSignature="I5X5H4YdVLWop1KYDja/rSNFMsVu4IrXy0dFjvPKD7FbO1oUzuYR/O5SXH/Lgdx+8BgaXry4oVlo+Nl/8jn/AA=="/>
+        </item>
         <item>
             <title>0.4.5</title>
             <pubDate>Mon, 12 Oct 2026 16:18:40 +0900</pubDate>
@@ -10,7 +21,7 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <sparkle:version>13</sparkle:version>
             <sparkle:shortVersionString>0.4.5</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.4.5/Notchbase-0.4.5.zip" length="6492461" type="application/octet-stream" sparkle:edSignature="ftV97qqTUeGMC89f4Lyq4JFzhoKMYzeP0Y9pjFgQJCERB/hpnsMsc/h2qxdqcoCdT4McE87SoYGQ6vyXBMRaCA=="></enclosure>
+            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.4.5/Notchbase-0.4.5.zip" length="6492461" type="application/octet-stream" sparkle:edSignature="ftV97qqTUeGMC89f4Lyq4JFzhoKMYzeP0Y9pjFgQJCERB/hpnsMsc/h2qxdqcoCdT4McE87SoYGQ6vyXBMRaCA=="/>
         </item>
         <item>
             <title>0.4.1</title>
@@ -19,19 +30,11 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <sparkle:version>10</sparkle:version>
             <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.4.1/Notchbase-0.4.1.zip" length="6460522" type="application/octet-stream" sparkle:edSignature="AhjDtqBEwZLqMtwki0CWDFWmhbCGHorkfDhOYOGfnKv+uzuZG0hQ4XdBZc18dZyYGKGlnPPSBcvNWbnSQQVVDg=="></enclosure>
-        </item>
-        <item>
-            <title>0.4.0</title>
-            <pubDate>Mon, 28 Sep 2026 14:43:02 +0900</pubDate>
-            <link>https://github.com/Ryuto42/Notchbase</link>
-            <sparkle:version>8</sparkle:version>
-            <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.4.0/Notchbase-0.4.0.zip" length="6451177" type="application/octet-stream" sparkle:edSignature="t9KFVr46DWl9XymXSNAE3aQSUyaMCuMvWOoMwEehUUPjF39sHgRJKv33Tv93JpXh3AtHoGahpw3Ap9COi2OeCg=="></enclosure>
+            <enclosure url="https://github.com/Ryuto42/Notchbase/releases/download/v0.4.1/Notchbase-0.4.1.zip" length="6460522" type="application/octet-stream" sparkle:edSignature="AhjDtqBEwZLqMtwki0CWDFWmhbCGHorkfDhOYOGfnKv+uzuZG0hQ4XdBZc18dZyYGKGlnPPSBcvNWbnSQQVVDg=="/>
         </item>
     </channel>
-</rss><!-- sparkle-signatures:
-edSignature: GY/w/HC/TkrxWtWFOh3+alE60Ns9rzTj1m2eSUzm6my2a/NwZU+OzJQ+3zlgUVznh2PSBkv/5AfHUGTsWnnZAg==
-length: 2457
+</rss>
+<!-- sparkle-signatures:
+edSignature: JYXmMB2qWTPtCz5RXHVz2bOxkEpde+YTYJECkl9ZZoZDJko0KMu2ZgiyNTvkKDzrbnkXZLhy8esNzZ05q/JzDQ==
+length: 2428
 -->
