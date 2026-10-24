@@ -13,7 +13,7 @@ extension NotchController {
     var isDebugPinned: Bool { forcedState != nil }
 
     func captureSnapshot(to path: String) {
-        Debug.log("snapshot: activity=\(String(describing: model.activity)) completion=\(String(describing: model.agents.recentCompletion()?.title)) priority=\(Preferences.shared.activityPriority.rawValue) upNext=\(model.media.upNext.count) tab=\(model.tab) current=\(model.media.current?.title ?? "-")")
+        Debug.log("snapshot: activity=\(String(describing: model.activity)) completion=\(String(describing: model.agents.announcement?.title)) priority=\(Preferences.shared.activityPriority.rawValue) upNext=\(model.media.upNext.count) tab=\(model.tab) current=\(model.media.current?.title ?? "-")")
         model.state = forcedState ?? .expanded
         let content = NotchRootView(model: model)
             .frame(width: Layout.containerSize.width, height: Layout.containerSize.height)

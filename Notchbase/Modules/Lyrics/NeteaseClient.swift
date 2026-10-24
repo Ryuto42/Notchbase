@@ -82,13 +82,16 @@ struct NeteaseClient {
                                instrumental: instrumental)
     }
 
-    private static let credit = try? NSRegularExpression(pattern: #"^\[[\d:.]+\]\s*[^:：\[\]]{1,12}\s*[:：]"#)
+    private static let credit = try? NSRegularExpression(pattern: #"^\[[\d:.]+\]\s*([^:：\[\]]{1,12}?)\s*[:：]"#)
+    private static let chineseRole = try? NSRegularExpression(pattern: #"^\p{Han}+$"#)
 
     private static func stripCredits(_ lrc: String) -> String {
         guard let credit else { return lrc }
         let kept = lrc.components(separatedBy: .newlines).filter { line in
             let range = NSRange(line.startIndex..., in: line)
-            guard credit.firstMatch(in: line, range: range) != nil else { return true }
+            guard let match = credit.firstMatch(in: line, range: range) else { return true }
+            let role = (line as NSString).substring(with: match.range(at: 1))
+            if chineseRole?.firstMatch(in: role, range: NSRange(role.startIndex..., in: role)) != nil { return false }
             return (LrcParser.parse(line).first?.time ?? 0) >= 30
         }
         let text = kept.joined(separator: "\n")

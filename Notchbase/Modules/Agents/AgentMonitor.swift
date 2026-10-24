@@ -12,7 +12,8 @@ final class AgentMonitor {
     private(set) var sessions: [AgentSession] = []
 
     func applyDemo(_ demo: [AgentSession]) { sessions = demo }
-    private(set) var lastCompletion: Completion?
+    private(set) var announcement: Completion?
+    @ObservationIgnored private var announcementTask: Task<Void, Never>?
 
     @ObservationIgnored private var wasWorking: Set<String> = []
 
@@ -29,12 +30,6 @@ final class AgentMonitor {
         .appendingPathComponent(".codex/session_index.jsonl")
 
     var workingSessions: [AgentSession] { sessions.filter { $0.status == .working } }
-
-    func recentCompletion(within seconds: TimeInterval = 25) -> Completion? {
-        guard let completion = lastCompletion,
-              Date().timeIntervalSince(completion.at) < seconds else { return nil }
-        return completion
-    }
 
     func start() {
         loadCodexTitles()
@@ -134,14 +129,25 @@ final class AgentMonitor {
     private func noteCompletions(in sessions: [AgentSession]) {
         let working = Set(sessions.filter { $0.status == .working }.map(\.id))
         let finished = wasWorking.subtracting(working)
-        if let id = finished.first, let session = sessions.first(where: { $0.id == id }), !session.interrupted {
-            lastCompletion = Completion(title: session.title, tool: session.tool, at: Date())
+        if let id = finished.first, let session = sessions.first(where: { $0.id == id }),
+           !session.interrupted, !session.turnOpen, !session.subagentsWorking, !session.backgroundPending {
+            announce(Completion(title: session.title, tool: session.tool, at: Date()))
             Debug.log("completion: \(session.title)")
         }
         if !working.isEmpty || !wasWorking.isEmpty {
             Debug.log("working=\(working.count) was=\(wasWorking.count)")
         }
         wasWorking = working
+    }
+
+    private func announce(_ completion: Completion) {
+        announcement = completion
+        announcementTask?.cancel()
+        announcementTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(1, Preferences.shared.announceSeconds)))
+            guard !Task.isCancelled else { return }
+            self?.announcement = nil
+        }
     }
 
     private func transcripts(in root: URL, modifiedAfter cutoff: Date) -> [URL] {

@@ -11,7 +11,6 @@ final class NotchController {
 
     private var transitionTask: Task<Void, Never>?
     private var hideTask: Task<Void, Never>?
-    private var activityExpiry: Task<Void, Never>?
     private var pendingState: NotchState?
     private var lastPointer = NSEvent.mouseLocation
     private var isFileDragging = false
@@ -80,7 +79,6 @@ final class NotchController {
     func stop() {
         pointer.stop()
         stopPolling()
-        activityExpiry?.cancel()
         transitionTask?.cancel()
         model.clipboard.stop()
         model.battery.stop()
@@ -270,20 +268,7 @@ final class NotchController {
                 self?.trackActivity()
             }
         }
-        refreshActivity()
-    }
-
-    private func refreshActivity() {
         refreshIdleState()
-        activityExpiry?.cancel()
-        let window = Preferences.shared.announceSeconds
-        guard let completion = model.agents.recentCompletion(within: window) else { return }
-        let remaining = window - Date().timeIntervalSince(completion.at)
-        activityExpiry = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(max(0, remaining) + 0.05))
-            guard !Task.isCancelled else { return }
-            self?.refreshActivity()
-        }
     }
 
     func toggleExpanded() {

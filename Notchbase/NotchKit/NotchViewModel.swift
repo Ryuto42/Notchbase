@@ -56,7 +56,7 @@ final class NotchViewModel {
 
     var activity: Activity? {
         guard Preferences.shared.showActivityStrip else { return nil }
-        let announced = agents.recentCompletion(within: Preferences.shared.announceSeconds) != nil
+        let announced = agents.announcement != nil
         let playing = media.current?.isPlaying == true
         let timing = clock.timerActive || clock.stopwatchActive || clock.alerting
 

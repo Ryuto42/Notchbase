@@ -115,6 +115,6 @@ final class LyricsController {
     private func cacheURL(_ key: String) -> URL {
         let digest = SHA256.hash(data: Data(key.utf8))
         let name = digest.map { String(format: "%02x", $0) }.joined()
-        return cacheDir.appendingPathComponent("\(name)-v3.json")
+        return cacheDir.appendingPathComponent("\(name)-v5.json")
     }
 }

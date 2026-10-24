@@ -23,7 +23,7 @@ struct ActivityStripView: View {
 
     @ViewBuilder
     private var agents: some View {
-        if let completion = model.agents.recentCompletion() {
+        if let completion = model.agents.announcement {
             if alignment == .leading {
                 BrandGlyph(tool: completion.tool, size: 17)
                     .foregroundStyle(Theme.primaryText)

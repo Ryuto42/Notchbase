@@ -11,6 +11,7 @@ final class TranscriptReader {
     var hasBackgroundTasks: Bool { !backgroundTasks.isEmpty }
 
     private static let endReasons: Set<String> = ["end_turn", "stop_sequence", "max_tokens", "refusal"]
+    private static let localPrefixes = ["<bash-input>", "<bash-stdout>", "<bash-stderr>", "<command-name>", "<command-message>", "<local-command-"]
     private static let backgroundPrefixes = ["Async agent launched", "Command running in background", "Command did not complete within"]
     private var offset: UInt64 = 0
     private var lastSize: UInt64 = 0
@@ -109,6 +110,9 @@ final class TranscriptReader {
         for body in [text] + results.map(\.text) {
             for id in Self.notifiedToolUses(in: body) { backgroundTasks.remove(id) }
         }
+        if object["isMeta"] as? Bool == true || object["isCompactSummary"] as? Bool == true { return }
+        let opening = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if results.isEmpty, Self.localPrefixes.contains(where: opening.hasPrefix) { return }
         if text.hasPrefix("[Request interrupted by user") {
             interrupted = true
             turnOpen = false
